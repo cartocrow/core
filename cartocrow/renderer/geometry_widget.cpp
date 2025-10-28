@@ -729,7 +729,7 @@ void GeometryWidget::setMode(int mode) {
 }
 
 void GeometryWidget::setStroke(Color color, double width, bool absoluteWidth) {
-	m_style.m_strokeColor = QColor(color.r, color.g, color.b);
+	m_style.m_strokeColor.setRgb(color.r, color.g, color.b, m_style.m_strokeColor.alpha());
 	m_style.m_strokeWidth = width;
 	m_style.m_absoluteWidth = absoluteWidth;
 }
