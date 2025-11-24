@@ -27,11 +27,12 @@ CartoCrow depends on the following build tools:
 
 And it depends on the following libraries:
 
-* CGAL (5.4, 5.5) – for implementations of computational geometry algorithms we need
-* glog (0.5.0, 0.6.0) – for logging
+* CGAL (6.0.1) – for implementations of computational geometry algorithms we need
 * ipelib (7.2.26) – for [Ipe](https://ipe.otfried.org) input and SVG/Ipe output
 * nlohmann-json (3.10.5, 3.11.2) – for JSON parsing
 * Qt (5.15) – for the interactive GUI
+* CavalierContours (0.1) – for offsetting polygons and polylines that consist of segments of lines and circles
+* GDAL (3.8.4) – for reading and writing vector geospatial data formats
 
 The version numbers listed are the ones we're testing with. Newer (and possibly somewhat older) versions will most likely work as well.
 
@@ -64,8 +65,8 @@ On Windows systems, we recommend using [vcpkg](https://github.com/microsoft/vcpk
   ```sh
   vcpkg install cgal:x64-windows
   vcpkg install qt5:x64-windows
-  vcpkg install glog:x64-windows
   vcpkg install nlohmann-json:x64-windows
+  vcpkg install gdal
   ```
 
   This step can take a very long time, especially compiling CGAL (around 30 minutes) and Qt (around 2 hours).
@@ -91,7 +92,7 @@ Most dependencies can be obtained from the repository:
 
 ```sh
 pacman -S base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
-pacman -S mingw-w64-x86_64-cgal mingw-w64-x86_64-glog mingw-w64-x86_64-qt5 mingw-w64-x86_64-nlohmann-json
+pacman -S mingw-w64-x86_64-cgal mingw-w64-x86_64-qt5 mingw-w64-x86_64-nlohmann-json mingw-w64-x86_64-gdal
 ```
 
 The remaining dependencies need to be built manually.
@@ -130,11 +131,12 @@ The remaining dependencies need to be built manually.
 <details>
   <summary><b>Installing dependencies on Linux</b></summary>
 
-On Ubuntu, most dependencies can be obtained from the repository:
+On Ubuntu 25.04, most dependencies can be obtained from the repository:
 
 ```sh
 sudo apt install build-essential cmake
 sudo apt install libcgal-dev nlohmann-json3-dev qtbase5-dev
+sudo apt install libpq-dev gdal-bin libgdal-dev
 sudo apt install libeigen3-dev
 ```
 
@@ -143,24 +145,21 @@ If Eigen [cannot be found](https://stackoverflow.com/q/23284473) during compilat
 ```sh
 cd /usr/include
 sudo ln -s eigen3/Eigen Eigen
-
 ```
+
+(Note: Ubuntu 24.10 and earlier have CGAL 5.6, which does not work.)
 
 The remaining dependencies need to be built manually.
 
-* **glog.** This dependency is built manually because Ubuntu's packaging apparently does not include the CMake files we need.
-
-  ```sh
-  git clone https://github.com/google/glog.git
-  cd glog
-  cmake -S . -B build
-  cmake --build build
-  sudo cmake --install build
-  ```
-
 * **Ipelib.** Download the [source archive](https://github.com/otfried/ipe/releases/download/v7.2.24/ipe-7.2.24-src.tar.gz), unpack it, and compile and install it using the instructions given in `install.txt`.
-</details>
 
+* **CavalierContours.** We manually copy the headers to install the header-only library.
+  ```sh
+  git clone https://github.com/jbuckmccready/CavalierContours.git
+  cd CavalierContours
+  sudo cp -R include/cavc /usr/local/include
+  ```
+</details>
 
 ## Compiling
 
@@ -194,20 +193,20 @@ If you want to use [cartocrow-web](https://github.com/tue-alga/cartocrow-web), c
 
 ## Usage
 
-CartoCrow provides a command-line application, simply called `cartocrow`, which can be used to generate maps. To use it, you need a JSON file describing the map to generate, which can then be passed to `cartocrow`:
+CartoCrow provides a command-line application, simply called `cartocrow`, which can be used to generate maps in SVG format. To use it, you need a JSON file describing the map to generate, which can then be passed to `cartocrow`:
 
 ```bash
-build/frontend/cartocrow <json-file>
+build/frontend/cartocrow <input-json> <output-svg> [<map-input>]
 ```
 
 We provide some sample input data to generate a necklace map depicting the population of all countries in Europe:
 
 ```bash
-build/frontend/cartocrow data/europe-population-necklace.json
+build/frontend/cartocrow data/europe-population-necklace.json output.svg data/europe.ipe
 ```
 
 
 ## License
 
-Copyright (c) 2019-2023 Netherlands eScience Center and TU Eindhoven
+Copyright (c) 2019-2025 Netherlands eScience Center and TU Eindhoven
 Licensed under the GPLv3.0 license. See LICENSE for details.

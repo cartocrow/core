@@ -9,8 +9,8 @@ link_libraries(${CGAL_LIBRARIES})
 find_dependency(GMP REQUIRED)
 
 find_dependency(Qt5Widgets REQUIRED)
-find_dependency(glog REQUIRED)
 find_dependency(Ipelib REQUIRED)
+find_dependency(GDAL REQUIRED)
 
 # Add the targets file
 include("${CMAKE_CURRENT_LIST_DIR}/CartoCrowTargets.cmake")

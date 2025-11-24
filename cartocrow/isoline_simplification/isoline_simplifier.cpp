@@ -30,6 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <CGAL/Polyline_simplification_2/simplify.h>
 
 #include <utility>
+#include <variant>
 #include "ipe_bezier_wrapper.h"
 
 namespace cartocrow::isoline_simplification {
@@ -976,8 +977,8 @@ bool IsolineSimplifier::check_ladder_intersections_naive(const SlopeLadder& ladd
 				const auto pv = Segment<K>(p, v);
 				auto spi = intersection(sp, edge);
 				auto pvi = intersection(pv, edge);
-				if (spi.has_value() && !(spi->type() == typeid(Point<K>) && boost::get<Point<K>>(*spi) == s) ||
-				    pvi.has_value() && !(pvi->type() == typeid(Point<K>) && boost::get<Point<K>>(*pvi) == v))
+				if (spi.has_value() && !(std::holds_alternative<Point<K>>(*spi) && std::get<Point<K>>(*spi) == s) ||
+					pvi.has_value() && !(std::holds_alternative<Point<K>>(*pvi) && std::get<Point<K>>(*pvi) == v))
 					return true;
 			}
 		}
@@ -988,9 +989,9 @@ bool IsolineSimplifier::check_ladder_intersections_naive(const SlopeLadder& ladd
 			if (e1 == e2) continue;
 			auto i = intersection(e1, e2);
 			if (i.has_value()) {
-				if (i->type() != typeid(Point<K>))
+				if (!std::holds_alternative<Point<K>>(*i))
 					return true;
-				auto p = boost::get<Point<K>>(*i);
+				auto p = std::get<Point<K>>(*i);
 				if (p != e1.source() && p != e1.target())
 					return true;
 			}
@@ -1062,9 +1063,9 @@ IntersectionResult IsolineSimplifier::check_ladder_intersections_Voronoi(const S
 			if (e1 == e2) continue;
 			auto i = intersection(e1, e2);
 			if (i.has_value()) {
-				if (i->type() != typeid(Point<K>))
+				if (!std::holds_alternative<Point<K>>(*i))
 					return std::monostate();
-				auto p = boost::get<Point<K>>(*i);
+				auto p = std::get<Point<K>>(*i);
 				if (p != e1.source() && p != e1.target())
 					return std::monostate();
 			}
@@ -1094,8 +1095,9 @@ std::vector<Point<K>> intersections_primal(Segment<K> seg, const CGAL::Object& o
 		auto inters = CGAL::intersection(s, seg);
 		if (inters.has_value()) {
 			auto v = *inters;
-			if (auto pp = boost::get<Point<K>>(&v)) {
-				intersections.push_back(*pp);
+			if (std::holds_alternative<Point<K>>(v)) {
+				auto pp = std::get<Point<K>>(v);
+				intersections.push_back(pp);
 			}
 		}
 		return intersections;
@@ -1103,8 +1105,9 @@ std::vector<Point<K>> intersections_primal(Segment<K> seg, const CGAL::Object& o
 		auto inters = CGAL::intersection(l, seg);
 		if (inters.has_value()) {
 			auto v = *inters;
-			if (auto pp = boost::get<Point<K>>(&v)) {
-				intersections.push_back(*pp);
+			if (std::holds_alternative<Point<K>>(v)) {
+				auto pp = std::get<Point<K>>(v);
+				intersections.push_back(pp);
 			}
 		}
 		return intersections;
@@ -1112,14 +1115,17 @@ std::vector<Point<K>> intersections_primal(Segment<K> seg, const CGAL::Object& o
 		auto inters = CGAL::intersection(r, seg);
 		if (inters.has_value()) {
 			auto v = *inters;
-			if (auto pp = boost::get<Point<K>>(&v)) {
-				intersections.push_back(*pp);
+			if (std::holds_alternative<Point<K>>(v)) {
+				auto pp = std::get<Point<K>>(v);
+				intersections.push_back(pp);
 			}
 		}
 		return intersections;
 	} else if (CGAL::assign(ps, o)) {
 		Open_Parabola_segment_2 ops{ps};
 		return parabola_intersections(seg, ps.line(), ps.center(), ops.get_p1(), ops.get_p2());
+	} else {
+		throw std::runtime_error("Impossible: primal geometry of segment Delaunay triangulation is a type other than line, ray, line segment, or parabolic segment.");
 	}
 }
 
@@ -1193,6 +1199,11 @@ IsolineSimplifier::intersected_region(Segment<K> rung, Point<K> p) {
 
 std::pair<std::vector<std::vector<SDG2::Edge>>, int>
 IsolineSimplifier::boundaries(const std::unordered_set<SDG2::Vertex_handle>& region) const {
+	if (region.empty()) {
+		throw std::runtime_error("Region must be non-empty.");
+	}
+
+	// Boundary edges
 	std::set<SDG2::Edge> edges;
 	std::unordered_map<SDG2::Face_handle, std::vector<SDG2::Edge>> f_edge;
 
@@ -1205,6 +1216,7 @@ IsolineSimplifier::boundaries(const std::unordered_set<SDG2::Vertex_handle>& reg
 
 			SDG2::Vertex_handle a = e.first->vertex(SDG2::ccw(e.second));
 			SDG2::Vertex_handle b = e.first->vertex(SDG2::cw(e.second));
+			// If one of the vertices lies within region then e is a boundary edge.
 			if (region.contains(a) != region.contains(b)) {
 				edges.insert(e);
 				f_edge[e.first].push_back(e);
@@ -1215,6 +1227,7 @@ IsolineSimplifier::boundaries(const std::unordered_set<SDG2::Vertex_handle>& reg
 		} while (eit != eit_start);
 	}
 
+	// Find connected components of boundary
 	std::vector<std::vector<SDG2::Edge>> boundaries;
 	while (!edges.empty()) {
 		std::vector<SDG2::Edge> boundary;
@@ -1233,11 +1246,9 @@ IsolineSimplifier::boundaries(const std::unordered_set<SDG2::Vertex_handle>& reg
 		boundaries.push_back(boundary);
 	}
 
-	if (boundaries.size() == 1) return std::pair(boundaries, 0);
-	if (boundaries.size() > 1) {
-		auto b1 = boundaries[0];
-		auto b2 = boundaries[1];
-
+	if (boundaries.size() == 0) return std::pair(boundaries, -1);
+	else if (boundaries.size() == 1) return std::pair(boundaries, 0);
+	else {
 		int outer = -1;
 
 		for (int i = 0; i < 2; i++) {

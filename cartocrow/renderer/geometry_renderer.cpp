@@ -22,12 +22,76 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace cartocrow::renderer {
 
+void GeometryRenderer::draw(const Segment<Inexact>& s) {
+	RenderPath path;
+	path.moveTo(s.start());
+	path.lineTo(s.end());
+	draw(path);
+}
+
+void GeometryRenderer::draw(const Rectangle<Inexact>& r) {
+	RenderPath path;
+	path.moveTo(r.vertex(0));
+	for (int i = 1; i < 4; ++i) {
+		path.lineTo(r.vertex(i));
+	}
+	path.close();
+	draw(path);
+}
+
+void GeometryRenderer::draw(const Triangle<Inexact>& t) {
+	RenderPath path;
+	path.moveTo(t.vertex(0));
+	for (int i = 1; i < 3; ++i) {
+		path.lineTo(t.vertex(i));
+	}
+	path.close();
+	draw(path);
+}
+
+void GeometryRenderer::draw(const Box& b) {
+	draw(Rectangle<Inexact>({b.xmin(), b.ymin()}, {b.xmax(), b.ymax()}));
+}
+
+void GeometryRenderer::draw(const Polygon<Inexact>& p) {
+	RenderPath path;
+	for (auto vertex = p.vertices_begin(); vertex != p.vertices_end(); vertex++) {
+		if (vertex == p.vertices_begin()) {
+			path.moveTo(*vertex);
+		} else {
+			path.lineTo(*vertex);
+		}
+	}
+	path.close();
+	draw(path);
+}
+
+void GeometryRenderer::draw(const Polyline<Inexact>& p) {
+	RenderPath path;
+	for (auto vertex = p.vertices_begin(); vertex != p.vertices_end(); vertex++) {
+		if (vertex == p.vertices_begin()) {
+			path.moveTo(*vertex);
+		} else {
+			path.lineTo(*vertex);
+		}
+	}
+	draw(path);
+}
+
+void GeometryRenderer::draw(const PolygonWithHoles<Inexact>& p) {
+	RenderPath path;
+	path << p;
+	draw(path);
+}
+
 void GeometryRenderer::draw(const PolygonSet<Inexact>& ps) {
 	std::vector<PolygonWithHoles<Inexact>> polygons;
 	ps.polygons_with_holes(std::back_inserter(polygons));
-	for (const PolygonWithHoles<Inexact>& p : polygons) {
-		draw(p);
+	RenderPath path;
+	for (const auto& p : polygons) {
+		path << p;
 	}
+	draw(path);
 }
 
 void GeometryRenderer::draw(const BezierCurve& c) {

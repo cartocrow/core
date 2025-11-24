@@ -43,9 +43,9 @@ include_directories(${CGAL_INCLUDE_DIR})
 link_libraries(${CGAL_LIBRARIES})
 find_package(GMP REQUIRED)
 
+find_package(GDAL CONFIG REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 set(CMAKE_AUTOMOC ON)
-find_package(glog REQUIRED)
 find_package(Ipelib REQUIRED)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
@@ -56,6 +56,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(cartocrow)
 add_subdirectory(demos)

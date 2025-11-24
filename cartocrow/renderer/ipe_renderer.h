@@ -45,7 +45,20 @@ struct IpeRendererStyle {
 	ipe::Color m_fillColor = ipe::Color(0, 102, 203);
 	/// The opacity of filled shapes, as a symbolic Ipe attribute.
 	ipe::Attribute m_fillOpacity;
+	/// The opacity of strokes, as a symbolic Ipe attribute.
 	ipe::Attribute m_strokeOpacity;
+	/// The current clip path
+	ipe::Shape* m_clipPath;
+	/// Clipping enabled?
+	bool m_clip = false;
+	/// Current line join.
+	ipe::TLineJoin m_lineJoin = ipe::ERoundJoin;
+	/// Current line cap.
+	ipe::TLineCap m_lineCap = ipe::ERoundCap;
+	/// Horizontal text alignment
+	ipe::THorizontalAlignment m_horizontalTextAlignment = ipe::EAlignHCenter;
+	/// Vertical text alignment
+	ipe::TVerticalAlignment m_verticalTextAlignment = ipe::EAlignVCenter;
 };
 
 /// Ipe specialization of the GeometryRenderer.
@@ -82,33 +95,46 @@ class IpeRenderer : public GeometryRenderer {
 	void save(const std::filesystem::path& file);
 
 	void draw(const Point<Inexact>& p) override;
-	void draw(const Segment<Inexact>& s) override;
-	void draw(const Polygon<Inexact>& p) override;
-	void draw(const PolygonWithHoles<Inexact>& p) override;
 	void draw(const Circle<Inexact>& c) override;
 	void draw(const Ellipse& e) override;
 	void draw(const BezierSpline& s) override;
 	void draw(const Line<Inexact>& l) override;
 	void draw(const Ray<Inexact>& r) override;
-	void draw(const Polyline<Inexact>& p) override;
-	void drawText(const Point<Inexact>& p, const std::string& text) override;
+	void draw(const Halfplane<Inexact>& h) override;
+	void draw(const RenderPath& p) override;
+	void drawText(const Point<Inexact>& p, const std::string& text, bool escape=true) override;
 
 	void pushStyle() override;
 	void popStyle() override;
 	void setMode(int mode) override;
-	void setStroke(Color color, double width) override;
+	void setStroke(Color color, double width, bool absoluteWidth = false) override;
 	void setStrokeOpacity(int alpha) override;
 	void setFill(Color color) override;
 	void setFillOpacity(int alpha) override;
+    void setClipPath(const RenderPath& clipPath) override;
+    void setClipping(bool enable) override;
+	void setLineJoin(LineJoin lineJoin) override;
+	void setLineCap(LineCap lineCap) override;
+	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
+	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
 
+	void setPreamble(const std::string& preamble);
+
+	void addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function);
+	void addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function, const std::string& name);
 	void addPainting(const std::shared_ptr<GeometryPainting>& painting);
 	void addPainting(const std::shared_ptr<GeometryPainting>& painting, const std::string& name);
 
+	/// Paintings will be added to a new page.
+	void nextPage();
+	/// Returns the current page index.
+	int currentPage();
+
   private:
+	/// Draw path on the current page and apply appropriate clipping and styling (lineJoin, lineCap).
+	void drawPathOnPage(ipe::Path* path);
 	/// Converts a polygon to an Ipe curve.
 	ipe::Curve* convertPolygonToCurve(const Polygon<Inexact>& p) const;
-	/// Converts a polyline to an Ipe curve.
-	ipe::Curve* convertPolylineToCurve(const Polyline<Inexact>& p) const;
 	/// Returns Ipe attributes to style an Ipe path with the current style.
 	ipe::AllAttributes getAttributesForStyle() const;
 	/// Escapes LaTeX's [reserved characters](https://latexref.xyz/Reserved-characters.html)
@@ -124,6 +150,8 @@ class IpeRenderer : public GeometryRenderer {
 		std::shared_ptr<GeometryPainting> m_painting;
 		/// The name of the painting displayed as a layer name in ipe.
 		std::optional<std::string> name;
+		/// The Ipe page the painting will be drawn onto.
+		int page_index;
 	};
 
 	/// The paintings we're drawing.
@@ -143,6 +171,10 @@ class IpeRenderer : public GeometryRenderer {
 	ipe::StyleSheet* m_alphaSheet;
 	/// The index of the Ipe layer we are currently drawing to.
 	int m_layer;
+	/// The index of the Ipe page a painting will get drawn to.
+	int m_pageIndex = 0;
+	/// Latex preamble
+	std::string m_preamble;
 };
 
 } // namespace cartocrow::renderer

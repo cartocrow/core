@@ -26,15 +26,11 @@ namespace cartocrow::renderer {
 PaintingRenderer::PaintingRenderer() {}
 
 void PaintingRenderer::paint(GeometryRenderer& renderer) const {
+    Style lastStyle;
+
 	for (auto& object : m_objects) {
 		if (std::holds_alternative<Point<Inexact>>(object)) {
 			renderer.draw(std::get<Point<Inexact>>(object));
-		} else if (std::holds_alternative<Segment<Inexact>>(object)) {
-			renderer.draw(std::get<Segment<Inexact>>(object));
-		} else if (std::holds_alternative<Polygon<Inexact>>(object)) {
-			renderer.draw(std::get<Polygon<Inexact>>(object));
-		} else if (std::holds_alternative<PolygonWithHoles<Inexact>>(object)) {
-			renderer.draw(std::get<PolygonWithHoles<Inexact>>(object));
 		} else if (std::holds_alternative<Circle<Inexact>>(object)) {
 			renderer.draw(std::get<Circle<Inexact>>(object));
 		} else if (std::holds_alternative<Ellipse>(object)) {
@@ -45,33 +41,35 @@ void PaintingRenderer::paint(GeometryRenderer& renderer) const {
 			renderer.draw(std::get<Line<Inexact>>(object));
 		} else if (std::holds_alternative<Ray<Inexact>>(object)) {
 			renderer.draw(std::get<Ray<Inexact>>(object));
-		} else if (std::holds_alternative<Polyline<Inexact>>(object)) {
-			renderer.draw(std::get<Polyline<Inexact>>(object));
+		} else if (std::holds_alternative<Halfplane<Inexact>>(object)) {
+			renderer.draw(std::get<Halfplane<Inexact>>(object));
+		} else if (std::holds_alternative<RenderPath>(object)) {
+			renderer.draw(std::get<RenderPath>(object));
 		} else if (std::holds_alternative<Label>(object)) {
-			renderer.drawText(std::get<Label>(object).first, std::get<Label>(object).second);
+			auto& [text, position, escape] = std::get<Label>(object);
+			renderer.drawText(text, position, escape);
 		} else if (std::holds_alternative<Style>(object)) {
 			Style style = std::get<Style>(object);
 			renderer.setFill(style.m_fillColor);
 			renderer.setFillOpacity(style.m_fillOpacity);
-			renderer.setStroke(style.m_strokeColor, style.m_strokeWidth);
+			renderer.setStroke(style.m_strokeColor, style.m_strokeWidth, style.m_absoluteWidth);
+			renderer.setStrokeOpacity(style.m_strokeOpacity);
+			renderer.setClipping(style.m_clip);
+            if (style.m_clipPath != lastStyle.m_clipPath) {
+			    renderer.setClipPath(style.m_clipPath);
+            }
+			renderer.setHorizontalTextAlignment(style.m_horizontalTextAlignment);
+			renderer.setVerticalTextAlignment(style.m_verticalTextAlignment);
+			renderer.setLineCap(style.m_lineCap);
+			renderer.setLineJoin(style.m_lineJoin);
 			renderer.setMode(style.m_mode);
+
+            lastStyle = style;
 		}
 	}
 }
 
 void PaintingRenderer::draw(const Point<Inexact>& p) {
-	m_objects.push_back(p);
-}
-
-void PaintingRenderer::draw(const Segment<Inexact>& s) {
-	m_objects.push_back(s);
-}
-
-void PaintingRenderer::draw(const Polygon<Inexact>& p) {
-	m_objects.push_back(p);
-}
-
-void PaintingRenderer::draw(const PolygonWithHoles<Inexact>& p) {
 	m_objects.push_back(p);
 }
 
@@ -95,21 +93,25 @@ void PaintingRenderer::draw(const Ray<Inexact>& r) {
 	m_objects.push_back(r);
 }
 
-void PaintingRenderer::draw(const Polyline<Inexact>& p) {
+void PaintingRenderer::draw(const Halfplane<Inexact>& h) {
+	m_objects.push_back(h);
+}
+
+void PaintingRenderer::draw(const RenderPath& p) {
 	m_objects.push_back(p);
 }
 
-void PaintingRenderer::drawText(const Point<Inexact>& p, const std::string& text) {
-	m_objects.push_back(Label(p, text));
+void PaintingRenderer::drawText(const Point<Inexact>& p, const std::string& text, bool escape) {
+	m_objects.push_back(Label(p, text, escape));
 }
 
 void PaintingRenderer::pushStyle() {
-	//m_styleStack.push(m_style);
+	m_styleStack.push(m_style);
 }
 
 void PaintingRenderer::popStyle() {
-	//m_style = m_styleStack.top();
-	//m_styleStack.pop();
+	m_style = m_styleStack.top();
+	m_styleStack.pop();
 }
 
 void PaintingRenderer::setMode(int mode) {
@@ -117,9 +119,10 @@ void PaintingRenderer::setMode(int mode) {
 	m_objects.push_back(m_style);
 }
 
-void PaintingRenderer::setStroke(Color color, double width) {
+void PaintingRenderer::setStroke(Color color, double width, bool absoluteWidth) {
 	m_style.m_strokeColor = color;
 	m_style.m_strokeWidth = width;
+	m_style.m_absoluteWidth = absoluteWidth;
 	m_objects.push_back(m_style);
 }
 
@@ -138,4 +141,33 @@ void PaintingRenderer::setFillOpacity(int alpha) {
 	m_objects.push_back(m_style);
 }
 
+void PaintingRenderer::setClipPath(const RenderPath& clipPath) {
+	m_style.m_clipPath = clipPath;
+    m_objects.push_back(m_style);
+}
+
+void PaintingRenderer::setClipping(bool enable) {
+	m_style.m_clip = enable;
+    m_objects.push_back(m_style);
+}
+
+void PaintingRenderer::setLineJoin(LineJoin lineJoin) {
+	m_style.m_lineJoin = lineJoin;
+    m_objects.push_back(m_style);
+}
+
+void PaintingRenderer::setLineCap(LineCap lineCap) {
+	m_style.m_lineCap = lineCap;
+    m_objects.push_back(m_style);
+}
+
+void PaintingRenderer::setHorizontalTextAlignment(HorizontalTextAlignment alignment) {
+	m_style.m_horizontalTextAlignment = alignment;
+    m_objects.push_back(m_style);
+}
+
+void PaintingRenderer::setVerticalTextAlignment(VerticalTextAlignment alignment) {
+	m_style.m_verticalTextAlignment = alignment;
+    m_objects.push_back(m_style);
+}
 } // namespace cartocrow::renderer
