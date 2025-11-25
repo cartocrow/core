@@ -1,7 +1,6 @@
 set(SOURCES
 	core.cpp
 	ellipse.cpp
-	ipe_reader.cpp
 	boundary_map.cpp
 	region_arrangement.cpp
 	region_map.cpp
@@ -15,7 +14,6 @@ set(HEADERS
 	centroid.h
 	core.h
 	ellipse.h
-	ipe_reader.h
 	boundary_map.h
 	arrangement_map.h
 	region_arrangement.h

@@ -26,7 +26,7 @@ set(HEADERS
 add_library(mosaic_cartogram ${SOURCES})
 target_link_libraries(mosaic_cartogram
 	PUBLIC core
-	PRIVATE glog::glog
+	#PRIVATE glog::glog
 )
 
 cartocrow_install_module(mosaic_cartogram)

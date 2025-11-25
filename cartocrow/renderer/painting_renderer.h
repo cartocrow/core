@@ -94,7 +94,7 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 	};
 	using Label = std::tuple<Point<Inexact>, std::string, bool>;
 	using DrawableObject =
-	    std::variant<Point<Inexact>, Circle<Inexact>, BezierSpline,
+	    std::variant<Point<Inexact>, Circle<Inexact>, BezierSpline, Ellipse,
 	                 Line<Inexact>, Ray<Inexact>, Halfplane<Inexact>, RenderPath, Label, Style>;
 	std::vector<DrawableObject> m_objects;
 	Style m_style;
