@@ -20,10 +20,31 @@ Created by tvl (t.vanlankveld@esciencecenter.nl) on 05-12-2019
 */
 
 #include "core.h"
+#include <algorithm>
+#include <cmath>
 #include <CGAL/number_utils_classes.h>
 
 namespace cartocrow {
 
+Color Color::shaded(double f) const {
+	f = std::clamp(f, 0.0, 2.0);
+	if (f < 1) {
+		// darken (shade)
+		return {
+			(int) std::round(r * f),
+			(int) std::round(g * f),
+			(int) std::round(b * f)
+		};
+	} else {
+		// lighten (tint)
+		f -= 1;
+		return {
+			(int) std::round(r + (255 - r) * f),
+			(int) std::round(g + (255 - g) * f),
+			(int) std::round(b + (255 - b) * f),
+		};
+	}
+}
 Color::Color() : r(0), g(0), b(0) {}
 Color::Color(int r, int g, int b) : r(r), g(g), b(b) {}
 Color::Color(int rgb) : r((rgb & 0xff0000) >> 16), g((rgb & 0x00ff00) >> 8), b(rgb & 0x0000ff) {}

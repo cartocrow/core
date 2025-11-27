@@ -126,6 +126,11 @@ void SvgRenderer::draw(const Circle<Inexact>& c) {
 	      << -c.center().y() << "\"/>\n";
 }
 
+void SvgRenderer::draw(const Ellipse& e) {
+	// TODO
+	std::cerr << "Ellipsoid rendering is not implemented for svg format; ignoring\n";
+}
+
 void SvgRenderer::draw(const BezierSpline& s) {
 	// TODO
 	std::cerr << "The SVG renderer does not support BezierSplines; ignoring\n";

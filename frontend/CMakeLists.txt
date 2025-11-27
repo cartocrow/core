@@ -13,6 +13,7 @@ target_link_libraries(
     core
     reader
     flow_map
+    mosaic_cartogram
     necklace_map
     isoline_simplification
     simplesets

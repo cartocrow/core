@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "../core/bezier.h"
 #include "../core/core.h"
+#include "../core/ellipse.h"
+#include "../core/region_map.h"
 #include "../core/polyline.h"
 #include "../core/halfplane.h"
 #include "render_path.h"
@@ -132,6 +134,11 @@ class GeometryRenderer {
 	void draw(const PolygonSet<Inexact>& p);
 	/// Draws a circle with the currently set style.
 	virtual void draw(const Circle<Inexact>& c) = 0;
+	/// Draws a circle with the currently set style.
+	void draw(const Circle<Exact>& c);
+	/// Draws an ellipse with the currently set style.
+	virtual void draw(const Ellipse& e) = 0;
+	/// Draws a Bézier spline with the currently set style.
 	/// Draws a Bézier curve with the currently set style.
 	void draw(const BezierCurve& c);
 	/// Draws a Bézier spline with the currently set style.
