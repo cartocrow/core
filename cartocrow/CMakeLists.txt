@@ -12,6 +12,7 @@ endmacro(cartocrow_install_module)
 
 add_subdirectory(core)
 add_subdirectory(circle_segment_helpers)
+add_subdirectory(datastructures)
 add_subdirectory(renderer)
 add_subdirectory(necklace_map)
 add_subdirectory(flow_map)
@@ -26,6 +27,7 @@ target_link_libraries(
     cartocrow_lib INTERFACE
     core
     circle_segment_helpers
+    datastructures
     renderer
     reader
     necklace_map
@@ -36,6 +38,7 @@ else()
 target_link_libraries(
     cartocrow_lib INTERFACE
     core
+    datastructures
     circle_segment_helpers
     renderer
     necklace_map
