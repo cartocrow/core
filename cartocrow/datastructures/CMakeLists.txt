@@ -4,6 +4,8 @@ set(SOURCES
 set(HEADERS
 	indexed_priority_queue.h
 	indexed_priority_queue.hpp
+	point_quad_tree.h
+	point_quad_tree.hpp
 	quad_tree.h
 	quad_tree.hpp
 )
