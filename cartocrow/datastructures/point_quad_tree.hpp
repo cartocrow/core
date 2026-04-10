@@ -75,7 +75,7 @@ namespace cartocrow::datastructures {
 	detail::PQTNode<PQT>* PointQuadTree<PQT>::find(Element& elt) {
 		int d = 0;
 		Node* n = root;
-		Point<Kernel>& pt = elt.getPoint();
+		Point<Kernel>& pt = PQT::get_point(elt);
 
 		while (n->elts == nullptr) {
 			d++;
