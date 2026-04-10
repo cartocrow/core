@@ -1,22 +1,17 @@
 #include "gdal_conversion.h"
 
 namespace cartocrow {
-PolygonSet<Exact> ogrMultiPolygonToPolygonSet(const OGRMultiPolygon& multiPolygon) {
-    PolygonSet<Exact> polygonSet;
-    for (auto& poly: multiPolygon) {
-        for (auto& linearRing: *poly) {
-            auto polygon = ogrLinearRingToPolygon(*linearRing);
-            if (polygon.is_clockwise_oriented()) {
-                polygon.reverse_orientation();
-            }
-            polygonSet.symmetric_difference(polygon);
-        }
+PolygonSetRaw<Inexact> ogrMultiPolygonToPolygonSetRaw(const OGRMultiPolygon& multiPolygon) {
+	PolygonSetRaw<Inexact> polygonSet;
+    for (const auto& poly : multiPolygon) {
+		auto pgnWH = ogrPolygonToPolygonWithHoles(*poly);
+		polygonSet.polygons_with_holes.push_back(pgnWH);
     }
     return polygonSet;
 }
 
-Polygon<Exact> ogrLinearRingToPolygon(const OGRLinearRing& ogrLinearRing) {
-    Polygon<Exact> polygon;
+Polygon<Inexact> ogrLinearRingToPolygon(const OGRLinearRing& ogrLinearRing) {
+    Polygon<Inexact> polygon;
     for (auto &pt: ogrLinearRing) {
         polygon.push_back({pt.getX(), pt.getY()});
     }
@@ -27,44 +22,34 @@ Polygon<Exact> ogrLinearRingToPolygon(const OGRLinearRing& ogrLinearRing) {
     return polygon;
 }
 
-PolygonSet<Exact> ogrPolygonToPolygonSet(const OGRPolygon& ogrPolygon) {
-    PolygonSet<Exact> polygonSet;
-    for (auto& linearRing : ogrPolygon) {
-        Polygon<Exact> polygon;
-        for (auto& pt : *linearRing) {
-            polygon.push_back({pt.getX(), pt.getY()});
-        }
-        // if the begin and end vertices are equal, remove one of them
-        if (polygon.container().front() == polygon.container().back()) {
-            polygon.container().pop_back();
-        }
-        if (polygon.is_clockwise_oriented()) {
-            polygon.reverse_orientation();
-        }
-        polygonSet.symmetric_difference(polygon);
-    }
+PolygonSetRaw<Inexact> ogrPolygonToPolygonSetRaw(const OGRPolygon& ogrPolygon) {
+	PolygonSetRaw<Inexact> polygonSet;
+	auto polygon = ogrPolygonToPolygonWithHoles(ogrPolygon);
+	polygonSet.polygons_with_holes.emplace_back(polygon);
     return polygonSet;
 }
 
-PolygonWithHoles<Exact> ogrPolygonToPolygonWithHoles(const OGRPolygon& ogrPolygon) {
-    std::vector<PolygonWithHoles<Exact>> pgns;
-    ogrPolygonToPolygonSet(ogrPolygon).polygons_with_holes(std::back_inserter(pgns));
-    assert(pgns.size() == 1);
-    return pgns.front();
+PolygonWithHoles<Inexact> ogrPolygonToPolygonWithHoles(const OGRPolygon& ogrPolygon) {
+	auto outer = ogrLinearRingToPolygon(*ogrPolygon.getExteriorRing());
+	std::vector<Polygon<Inexact>> holes;
+	for (int i = 0; i < ogrPolygon.getNumInteriorRings(); ++i) {
+		holes.push_back(ogrLinearRingToPolygon(*ogrPolygon.getInteriorRing(i)));
+    }
+	return {outer, holes.begin(), holes.end()};
 }
 
-std::vector<Polyline<Exact>> ogrMultiLineStringToMultiPolyline(const OGRMultiLineString& ogrMultiLineString) {
-	std::vector<Polyline<Exact>> pls;
+PolylineSet<Inexact> ogrMultiLineStringToPolylineSet(const OGRMultiLineString& ogrMultiLineString) {
+	PolylineSet<Inexact> polylineSet;
 
 	for (const auto& lineString : ogrMultiLineString) {
-		pls.push_back(ogrLineStringToPolyline(*lineString));
+		polylineSet.polylines.push_back(ogrLineStringToPolyline(*lineString));
 	}
 
-	return pls;
+	return polylineSet;
 }
 
-Polyline<Exact> ogrLineStringToPolyline(const OGRLineString& ogrLineString) {
-	Polyline<Exact> pl;
+Polyline<Inexact> ogrLineStringToPolyline(const OGRLineString& ogrLineString) {
+	Polyline<Inexact> pl;
 
 	for (const auto& pt : ogrLineString) {
 		pl.push_back({pt.getX(), pt.getY()});

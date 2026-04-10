@@ -10,6 +10,7 @@ set(SOURCES
 	polyline.cpp
 	polyline_set.cpp
 	segment_delaunay_graph_helpers.cpp
+	polygon_set_raw.cpp
 )
 set(HEADERS
 	centroid.h
@@ -35,6 +36,7 @@ set(HEADERS
 	segment_delaunay_graph_helpers.h
 	segment_delaunay_graph_helpers_cgal_adapted.h
 	polyline_set.h
+	polygon_set_raw.h
 )
 
 add_library(core ${SOURCES})
