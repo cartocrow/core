@@ -18,6 +18,42 @@ class Open_Parabola_segment_2 : public CGAL::Parabola_segment_2<Gt> {
 	}
 };
 
+// These CGAL functions are available for triangulations, but not for delaunay graphs, so we create them ourselves.
+template <class SDG>
+int
+mirror_index(const SDG& sdg, typename SDG::Face_handle f, int i)
+{
+	// return the index of opposite vertex in neighbor(i);
+	CGAL_precondition (f->neighbor(i) != typename SDG::Face_handle() &&
+	                  f->dimension() >= 1);
+	if (f->dimension() == 1) {
+		CGAL_assertion(i<=1);
+		const int j = f->neighbor(i)->index(f->vertex((i==0) ? 1 : 0));
+		CGAL_assertion(j<=1);
+		return (j==0) ? 1 : 0;
+	}
+	return sdg.ccw( f->neighbor(i)->index(f->vertex(sdg.ccw(i))));
+}
+
+template <class SDG>
+typename SDG::Vertex_handle
+mirror_vertex(const SDG& sdg, typename SDG::Face_handle f, int i)
+{
+	CGAL_precondition ( f->neighbor(i) != typename SDG::Face_handle()
+						&& f->dimension() >= 1);
+	return f->neighbor(i)->vertex(mirror_index(sdg, f,i));
+}
+
+template <class SDG>
+typename SDG::Edge
+mirror_edge(const SDG& sdg, const typename SDG::Edge e)
+{
+	CGAL_precondition(e.first->neighbor(e.second) != typename SDG::Face_handle()
+	                  && e.first->dimension() >= 1);
+	return typename SDG::Edge(e.first->neighbor(e.second),
+	            mirror_index(sdg, e.first, e.second));
+}
+
 template <class SDG>
 std::variant<typename SDG::Geom_traits::Point_2, typename SDG::Geom_traits::Segment_2>
 site_projection(const SDG& delaunay, const typename SDG::Edge& edge, const typename SDG::Site_2& site) {
@@ -81,7 +117,10 @@ CubicBezierCurve parabolaSegmentToBezier(const CGAL::Parabola_segment_2<Gt>& p) 
 	return CubicBezierCurve(approximate(start), approximate(control), approximate(end));
 }
 
-// The functions are adapted from a CGAL example. https://github.com/CGAL/cgal/blob/33a2a257bde0e33af8ff083c28ea12050b28e1b5/Segment_Delaunay_graph_2/examples/Segment_Delaunay_graph_2/sdg-advanced-draw.cpp
+CGAL::Parabola_segment_2<CGAL::Segment_Delaunay_graph_traits_2<Inexact>>
+approximate(const CGAL::Parabola_segment_2<CGAL::Segment_Delaunay_graph_traits_2<Exact>>& ps);
+
+// The functions below are adapted from a CGAL example. https://github.com/CGAL/cgal/blob/33a2a257bde0e33af8ff083c28ea12050b28e1b5/Segment_Delaunay_graph_2/examples/Segment_Delaunay_graph_2/sdg-advanced-draw.cpp
 template < typename ExactSite, typename SDGSite >
 ExactSite convert_site_to_exact(const SDGSite &site)
 {
@@ -176,7 +215,4 @@ CGAL::Object exact_primal(const Edge& e,
 
 	return make_object(Construct_sdg_bisector_ray_2()(p, q, r));
 }
-
-CGAL::Parabola_segment_2<CGAL::Segment_Delaunay_graph_traits_2<Inexact>>
-approximate(const CGAL::Parabola_segment_2<CGAL::Segment_Delaunay_graph_traits_2<Exact>>& ps);
 }

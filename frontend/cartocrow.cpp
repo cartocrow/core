@@ -32,9 +32,6 @@ Created by tvl (t.vanlankveld@esciencecenter.nl) on 10-09-2019
 #include "cartocrow/core/region_map.h"
 #include "cartocrow/core/region_arrangement.h"
 #include "cartocrow/core/transform_helpers.h"
-#include "cartocrow/flow_map/painting.h"
-#include "cartocrow/flow_map/spiral_tree.h"
-#include "cartocrow/flow_map/spiral_tree_unobstructed_algorithm.h"
 #include "cartocrow/necklace_map/circle_necklace.h"
 #include "cartocrow/necklace_map/necklace_map.h"
 #include "cartocrow/necklace_map/painting.h"
@@ -93,28 +90,6 @@ int main(int argc, char* argv[]) {
 
 		necklace_map::Painting::Options options;
 		painting = std::make_shared<necklace_map::Painting>(necklaceMap, options);
-
-	} else if (projectData["type"] == "flow_map") {
-		RegionMap map = ipeToRegionMap(projectFilename.parent_path() / projectData["map"]);
-		auto map_ptr = std::make_shared<RegionMap>(map);
-
-		// TODO [ws] this is temporary: draw the spiral tree until the flow map
-		// is implemented
-		Region& root = (*map_ptr)[projectData["root"]];
-		std::shared_ptr<flow_map::SpiralTree> tree = std::make_shared<flow_map::SpiralTree>(
-		    approximate(centroid(root.shape)), projectData["parameters"]["angle"].get<double>());
-		for (auto it = projectData["data"].begin(); it != projectData["data"].end(); ++it) {
-			tree->addPlace(it.key(), approximate(centroid((*map_ptr)[it.key()].shape)),
-			               it.value().get<double>());
-		}
-		tree->addShields();
-
-		flow_map::SpiralTreeUnobstructedAlgorithm algorithm(*tree);
-		algorithm.run();
-		debugPainting = algorithm.debugPainting();
-
-		flow_map::Painting::Options options;
-		painting = std::make_shared<flow_map::Painting>(map_ptr, tree, options);
 
 	} else {
 		std::cerr << "Unknown type \"" << projectData["type"] << "\" specified\n";

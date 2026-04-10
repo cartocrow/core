@@ -1,4 +1,3 @@
-add_subdirectory(flow_map)
 add_subdirectory(renderer)
 add_subdirectory(circle_segment_helpers)
 add_subdirectory(core)

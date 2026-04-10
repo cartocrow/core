@@ -46,7 +46,10 @@ void DoubleSlider::setRange(double min, double max) {
 /// Example: a precision of 1 has 2 discrete steps: the minimum and maximum value.
 /// The default precision is 1000.
 void DoubleSlider::setPrecision(int precision) {
+	double oldValue = value();
 	m_precision = precision;
+	m_intSlider->setMaximum(precision);
+	setValue(oldValue);
 }
 
 void DoubleSlider::setValue(double val) {
@@ -56,6 +59,14 @@ void DoubleSlider::setValue(double val) {
 
 [[nodiscard]] double DoubleSlider::value() const {
 	return m_min + (m_intSlider->value() / static_cast<double>(m_precision)) * (m_max - m_min);
+}
+
+[[nodiscard]] double DoubleSlider::minimum() const {
+	return m_min;
+}
+
+[[nodiscard]] double DoubleSlider::maximum() const {
+	return m_max;
 }
 
 void DoubleSlider::handleIntValueChanged(int) {

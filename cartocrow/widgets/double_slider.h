@@ -1,5 +1,4 @@
-#ifndef CARTOCROW_DOUBLESLIDER_H
-#define CARTOCROW_DOUBLESLIDER_H
+#pragma once
 
 #include <QSlider>
 #include <QVBoxLayout>
@@ -29,6 +28,8 @@ class DoubleSlider : public QWidget {
 	void setPrecision(int precision);
 	void setValue(double val);
 	[[nodiscard]] double value() const;
+	[[nodiscard]] double minimum() const;
+	[[nodiscard]] double maximum() const;
 
   signals:
 	void valueChanged(double value);
@@ -43,4 +44,3 @@ class DoubleSlider : public QWidget {
 	int m_precision = 1000;
 };
 }
-#endif //CARTOCROW_DOUBLESLIDER_H

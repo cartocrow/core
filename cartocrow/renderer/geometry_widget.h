@@ -229,7 +229,9 @@ class GeometryWidget : public QWidget, public GeometryRenderer {
 
 	/// Adds a new painting to this widget.
 	void addPainting(std::shared_ptr<GeometryPainting> painting, const std::string& name);
-	void addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function, const std::string& name);
+	std::shared_ptr<GeometryPainting> addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function, const std::string& name);
+	// Set visibility of a painting
+	void setVisibility(const std::shared_ptr<GeometryPainting>& painting, bool visible);
 	/// Removes all paintings from this widget.
 	void clear();
 

@@ -877,9 +877,17 @@ void GeometryWidget::addPainting(std::shared_ptr<GeometryPainting> painting, con
 	updateLayerList();
 }
 
-void GeometryWidget::addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function, const std::string& name) {
+std::shared_ptr<GeometryPainting> GeometryWidget::addPainting(const std::function<void(renderer::GeometryRenderer&)>& draw_function, const std::string& name) {
 	auto painting = std::make_shared<FunctionPainting>(draw_function);
 	addPainting(painting, name);
+	return painting;
+}
+
+void GeometryWidget::setVisibility(const std::shared_ptr<GeometryPainting>& painting, bool visible) {
+	auto it = std::find_if(m_paintings.begin(), m_paintings.end(), [&painting](const DrawnPainting& dp) { return dp.m_painting == painting; });
+	if (it == m_paintings.end()) return;
+	it->visible = visible;
+	updateLayerList();
 }
 
 void GeometryWidget::clear() {

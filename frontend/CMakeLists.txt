@@ -11,7 +11,6 @@ target_link_libraries(
     PRIVATE
     core
     reader
-    flow_map
     necklace_map
     renderer
     CGAL::CGAL

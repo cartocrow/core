@@ -4,6 +4,8 @@
 #include "core.h"
 #include "rectangle_helpers.h"
 
+#include <CGAL/Parabola_segment_2.h>
+
 namespace cartocrow {
 template <class K>
 PolygonWithHoles<K> transform(const CGAL::Aff_transformation_2<K> &t, const PolygonWithHoles<K> &pwh) {
@@ -28,6 +30,16 @@ PolygonSet<K> transform(const CGAL::Aff_transformation_2<K> &t, const PolygonSet
 	}
 	return transformed;
 }
+
+Box transform(const Box& box, const CGAL::Aff_transformation_2<Inexact>& t);
+
+template <class Gt, class K>
+CGAL::Parabola_segment_2<Gt> transform(const CGAL::Parabola_segment_2<Gt>& ps,
+	const CGAL::Aff_transformation_2<K>& t) {
+	return {ps.center().transform(t), ps.line().transform(t), ps.p1.transform(t), ps.p2.transform(t)};
+}
+
+CGAL::Aff_transformation_2<Exact> pretendExact(const CGAL::Aff_transformation_2<Inexact>& t);
 
 template <class K>
 CGAL::Aff_transformation_2<K> fitInto(const Rectangle<K>& toFit, const Rectangle<K>& into) {
