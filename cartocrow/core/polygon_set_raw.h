@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cartocrow/core/core.h>
 #include <cartocrow/core/transform_helpers.h>
 
@@ -9,13 +11,21 @@ struct PolygonSetRaw {
 	PolygonSetRaw<K> transform(const CGAL::Aff_transformation_2<K>& trans) const {
 		PolygonSetRaw<K> transformed;
 		for (const auto& pgn : polygons_with_holes) {
-			transformed.polygons_with_holes.push_back(transform(trans, pgn));
+			transformed.polygons_with_holes.push_back(cartocrow::transform(trans, pgn));
 		}
 		return transformed;
 	}
 
 	Box bbox() const {
 		return CGAL::bbox_2(polygons_with_holes.begin(), polygons_with_holes.end());
+	}
+
+	PolygonSet<K> polygonSet() const {
+		PolygonSet<K> polygonSet;
+		for (const auto& pgn : polygons_with_holes) {
+			polygonSet.join(pgn);
+		}
+		return polygonSet;
 	}
 };
 

@@ -103,6 +103,14 @@ void GeometryRenderer::draw(const PolygonSet<Inexact>& ps) {
 	draw(path);
 }
 
+void GeometryRenderer::draw(const PolygonSetRaw<Inexact>& ps) {
+	RenderPath path;
+	for (const auto& p : ps.polygons_with_holes) {
+		path << p;
+	}
+	draw(path);
+}
+
 void GeometryRenderer::draw(const CubicBezierCurve& c) {
 	CubicBezierSpline spline;
 	spline.appendCurve(c);
