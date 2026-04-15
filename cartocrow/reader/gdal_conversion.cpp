@@ -31,9 +31,15 @@ PolygonSetRaw<Inexact> ogrPolygonToPolygonSetRaw(const OGRPolygon& ogrPolygon) {
 
 PolygonWithHoles<Inexact> ogrPolygonToPolygonWithHoles(const OGRPolygon& ogrPolygon) {
 	auto outer = ogrLinearRingToPolygon(*ogrPolygon.getExteriorRing());
+	if (!outer.is_counterclockwise_oriented()) {
+		outer.reverse_orientation();
+    }
 	std::vector<Polygon<Inexact>> holes;
 	for (int i = 0; i < ogrPolygon.getNumInteriorRings(); ++i) {
 		holes.push_back(ogrLinearRingToPolygon(*ogrPolygon.getInteriorRing(i)));
+		if (!holes.back().is_clockwise_oriented()) {
+			holes.back().reverse_orientation();
+		}
     }
 	return {outer, holes.begin(), holes.end()};
 }
