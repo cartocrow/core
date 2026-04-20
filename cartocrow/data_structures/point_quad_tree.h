@@ -2,7 +2,7 @@
 
 #include <cartocrow/core/core.h>
 
-namespace cartocrow::datastructures {
+namespace cartocrow::data_structures {
 
 	template <typename PQT>
 	concept PointQuadTreeTraits = requires(typename PQT::Element& elt) {
@@ -55,6 +55,5 @@ namespace cartocrow::datastructures {
 		static bool same_point(const Point<Kernel>& a, const Point<Kernel>& b, const Number<Kernel> prec);
 	};
 
-} // namespace cartocrow::datastructures
-
+} // namespace cartocrow::data_structures
 #include "point_quad_tree.hpp"

@@ -3,7 +3,7 @@
 // Do not include this file, but the .h file instead
 // -----------------------------------------------------------------------------
 
-namespace cartocrow::datastructures {
+namespace cartocrow::data_structures {
 
 	namespace detail {
 		template <QuadTreeTraits QT>
@@ -20,7 +20,7 @@ namespace cartocrow::datastructures {
 			Node* rb = nullptr;
 			Rect rect;
 			bool inf_left, inf_right, inf_bottom, inf_top;
-			std::vector<Element*> elts;
+			std::vector<Element> elts;
 
 			QTNode(Node* parent, Rect rect, bool inf_left, bool inf_right,
 				bool inf_bottom, bool inf_top)
@@ -97,14 +97,14 @@ namespace cartocrow::datastructures {
 			return;
 		}
 		else if (encloses(query, n)) {
-			for (Element* elt : n->elts) {
-				act(*elt);
+			for (Element elt : n->elts) {
+				act(elt);
 			}
 		}
 		else {
-			for (Element* elt : n->elts) {
-				if (QT::element_overlaps_rectangle(*elt, query)) {
-					act(*elt);
+			for (Element elt : n->elts) {
+				if (QT::element_overlaps_rectangle(elt, query)) {
+					act(elt);
 				}
 			}
 		}
@@ -117,7 +117,7 @@ namespace cartocrow::datastructures {
 
 	template <QuadTreeTraits QT>
 	template <bool extend>
-	detail::QTNode<QT>* QuadTree<QT>::find(Element& elt) {
+	detail::QTNode<QT>* QuadTree<QT>::find(Element elt) {
 		int d = 0;
 		Node* n = root;
 
@@ -246,13 +246,13 @@ namespace cartocrow::datastructures {
 	}
 
 	template <QuadTreeTraits QT>
-	void QuadTree<QT>::insert(Element& elt) {
+	void QuadTree<QT>::insert(Element elt) {
 		Node* n = find<true>(elt);
-		n->elts.push_back(&elt);
+		n->elts.push_back(elt);
 	}
 
 	template <QuadTreeTraits QT>
-	bool QuadTree<QT>::remove(Element& elt) {
+	bool QuadTree<QT>::remove(Element elt) {
 		Node* n = find<false>(elt);
 
 		if (n == nullptr) {
@@ -260,7 +260,7 @@ namespace cartocrow::datastructures {
 			return false;
 		}
 
-		auto position = std::find(n->elts.begin(), n->elts.end(), &elt);
+		auto position = std::find(n->elts.begin(), n->elts.end(), elt);
 		if (position == n->elts.end()) {
 			// the node doesn't actually contain the element
 			return false;
@@ -296,4 +296,4 @@ namespace cartocrow::datastructures {
 		findOverlappedRecursive(root, query, act);
 	}
 
-} // namespace cartocrow::datastructures
+} // namespace cartocrow::data_structures
