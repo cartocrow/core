@@ -8,6 +8,10 @@ set(HEADERS
 	point_quad_tree.hpp
 	quad_tree.h
 	quad_tree.hpp
+	graph_2.h
+	graph_curve_traits_2.h
+	graph_segment_traits_2.h
+	straight_graph_2.h
 )
 
 add_library(data_structures ${SOURCES})
