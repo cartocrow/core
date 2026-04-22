@@ -89,6 +89,12 @@ void GeometryRenderer::draw(const PolylineSet<Inexact>& ps) {
 	draw(path);
 }
 
+void GeometryRenderer::draw(const PointSet<Inexact>& ps) {
+	for (const auto& p : ps.points) {
+		draw(p);
+	}
+}
+
 void GeometryRenderer::draw(const PolygonWithHoles<Inexact>& p) {
 	RenderPath path;
 	path << p;

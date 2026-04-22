@@ -64,6 +64,18 @@ Polyline<Inexact> ogrLineStringToPolyline(const OGRLineString& ogrLineString) {
 	return pl;
 }
 
+Point<Inexact> ogrPointToPoint(const OGRPoint& ogrPoint) {
+	return {ogrPoint.getX(), ogrPoint.getY()};
+}
+
+PointSet<Inexact> ogrMultiPointToPointSet(const OGRMultiPoint& ogrMultiPoint) {
+	std::vector<Point<Inexact>> pts;
+	for (const OGRPoint* p : ogrMultiPoint) {
+		pts.emplace_back(p->getX(), p->getY());
+	}
+	return {pts};
+}
+
 OGRLinearRing polygonToOGRLinearRing(const Polygon<Inexact>& polygon) {
     OGRLinearRing ring;
     for (const auto& v : polygon.vertices()) {
