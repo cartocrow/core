@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "../core/cubic_bezier.h"
 #include "../core/ellipse.h"
 #include "../core/polygon_set_raw.h"
+#include "../core/point_set.h"
 #include "../core/polyline.h"
 #include "../core/polyline_set.h"
 #include "../core/halfplane.h"
@@ -114,6 +115,8 @@ class GeometryRenderer {
 
 	/// Draws a single point with the currently set style.
 	virtual void draw(const Point<Inexact>& p) = 0;
+	/// Draws a point set with the currently set style.
+	void draw(const PointSet<Inexact>& ps);
 	/// Draws a single line segment with the currently set style.
 	void draw(const Segment<Inexact>& s);
 	/// Draws a rectangle

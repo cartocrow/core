@@ -11,6 +11,7 @@ set(SOURCES
 	segment_delaunay_graph_helpers.cpp
 	stopwatch.cpp
 	polygon_set_raw.cpp
+	point_set.cpp
 )
 set(HEADERS
 	core.h
@@ -37,6 +38,7 @@ set(HEADERS
 	stopwatch.h
 	polygon_helpers.h
 	polygon_set_raw.h
+	point_set.h
 )
 
 add_library(core ${SOURCES})
