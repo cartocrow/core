@@ -30,13 +30,42 @@ bool intersectsRecursive(const CubicBezierCurveOrSpline1& c1, const CubicBezierC
 	auto [c21, c22] = c2.split(0.5);
 	for (auto& c1x : {c11, c12}) {
 		for (auto& c2x : {c21, c22}) {
-			if (!do_overlap(c1x.bbox(), c2x.bbox())) continue;
 			if (intersectsRecursive(c1x, c2x, threshold)) return true;
 		}
 	}
 	return false;
 }
+
+template <class CubicBezierCurveOrSpline1, class CubicBezierCurveOrSpline2, class OutputIterator>
+void intersectionsRecursive(const CubicBezierCurveOrSpline1& c1, const CubicBezierCurveOrSpline2& c2, OutputIterator out, 
+							double c1_t0, double c1_t1, double c2_t0, double c2_t1, double threshold) {
+	auto c1Box = c1.bbox();
+	auto c2Box = c2.bbox();
+	if (!do_overlap(c1Box, c2Box))
+		return;
+	auto comb = c1Box + c2Box;
+	if (std::max(comb.x_span(), comb.y_span()) < threshold) {
+		*out++ = {c1.source(), c1.parameter(c1_t0), c2.parameter(c2_t0)};
+		return;
+	}
+	auto [c11, c12] = c1.split(0.5);
+	auto [c21, c22] = c2.split(0.5);
+	auto c1_tm = (c1_t0 + c1_t1) / 2;
+	auto c2_tm = (c2_t0 + c2_t1) / 2;
+
+	intersectionsRecursive(c11, c21, out, c1_t0, c1_tm, c2_t0, c2_tm, threshold);
+	intersectionsRecursive(c11, c22, out, c1_t0, c1_tm, c2_tm, c2_t1, threshold);
+	intersectionsRecursive(c12, c21, out, c1_tm, c1_t1, c2_t0, c2_tm, threshold);
+	intersectionsRecursive(c12, c22, out, c1_tm, c1_t1, c2_tm, c2_t1, threshold);
 }
+}
+
+template <class CubicBezierCurveOrSpline1, class CubicBezierCurveOrSpline2>
+struct CubicBezierIntersectionResult {
+	Point<Inexact> point;
+	typename CubicBezierCurveOrSpline1::Parameter parameter1;
+	typename CubicBezierCurveOrSpline2::Parameter parameter2;
+};
 
 /// A cubic Bézier curve.
 /// Cubic Bézier curves can be combined to form a cubic Bézier spline (\ref CubicBezierSpline).
@@ -140,6 +169,11 @@ class CubicBezierCurve {
 
 	/// Return a transformed version of the Bézier curve.
 	CubicBezierCurve transform(const CGAL::Aff_transformation_2<Inexact> &t) const;
+
+	using Parameter = Number<K>;
+
+	Parameter parameter(double param) const;
+	double doubleParameter(Parameter param) const;
 
 	struct CurvePoint {
 		Number<K> t;
@@ -362,6 +396,11 @@ class CubicBezierSpline {
 		}
 	};
 
+	using Parameter = SplineParameter;
+
+	Parameter parameter(double param) const;
+	double doubleParameter(Parameter param) const;
+
 	/// We represent a point on a spline by a pair of its spline parameter and the coordinates of the point in the plane.
 	struct SplinePoint {
 		SplineParameter param;
@@ -534,7 +573,6 @@ class CubicBezierSpline {
 
 		for (int curveIndex = 0; curveIndex < cs.size(); ++curveIndex) {
 			auto& curve = cs[curveIndex];
-			auto& nextCurve = cs[curveIndex+1];
 			std::vector<Curve::CurvePoint> pts;
 			curve.inflections(std::back_inserter(pts));
 			for (const auto& pt : pts) {
@@ -543,6 +581,7 @@ class CubicBezierSpline {
 
 			// The vertices that connect different curves may also be inflection points.
 			if (curveIndex < numCurves() - 1) {
+				auto& nextCurve = cs[curveIndex + 1];
 				// If this is not the last curve, then the target of this curve is a curve endpoint in the interior of the spline.
 				if (curve.curvature(1) * nextCurve.curvature(0) < 0) { // if curvature has different signs
 					*out++ = SplinePoint{SplineParameter{curveIndex, 1}, curve.target()};
@@ -605,6 +644,14 @@ class CubicBezierSpline {
 
 	bool intersects(const CubicBezierCurve& other, double threshold = M_EPSILON) const;
 	bool intersects(const CubicBezierSpline& other, double threshold = M_EPSILON) const;
+	template <class OutputIterator>
+	void intersections(const CubicBezierCurve& other, OutputIterator out, double threshold = M_EPSILON) const {
+		detail::intersectionsRecursive(*this, other, out, 0, 1, 0, 1, threshold);
+	}
+	template <class OutputIterator>
+	void intersections(const CubicBezierSpline& other, OutputIterator out, double threshold = M_EPSILON) const {
+		detail::intersectionsRecursive(*this, other, out, 0, 1, 0, 1, threshold);
+	}
 	bool selfIntersects(double threshold = M_EPSILON) const;
 };
 }
