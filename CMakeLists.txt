@@ -82,7 +82,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 add_subdirectory(cartocrow)
 if (NOT EMSCRIPTEN)
     add_subdirectory(demos)
-    add_subdirectory(frontend)
     add_subdirectory(test)
 endif()
 

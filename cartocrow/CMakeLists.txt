@@ -14,7 +14,6 @@ add_subdirectory(core)
 add_subdirectory(circle_segment_helpers)
 add_subdirectory(data_structures)
 add_subdirectory(renderer)
-add_subdirectory(necklace_map)
 if (NOT EMSCRIPTEN)
     add_subdirectory(reader)
     add_subdirectory(widgets)
@@ -29,7 +28,6 @@ target_link_libraries(
     data_structures
     renderer
     reader
-    necklace_map
     widgets
 )
 else()
@@ -39,7 +37,6 @@ target_link_libraries(
     data_structures
     circle_segment_helpers
     renderer
-    necklace_map
 )
 endif()
 

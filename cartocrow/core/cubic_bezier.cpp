@@ -176,6 +176,14 @@ CubicBezierCurve CubicBezierCurve::transform(const CGAL::Aff_transformation_2<In
 	return { m_p0.transform(t), m_p1.transform(t), m_p2.transform(t), m_p3.transform(t) };
 }
 
+CubicBezierCurve::Parameter CubicBezierCurve::parameter(double param) const {
+	return param;
+}
+
+double CubicBezierCurve::doubleParameter(CubicBezierCurve::Parameter param) const {
+	return param;
+}
+
 CubicBezierCurve::CurvePoint
 CubicBezierCurve::nearest(Point<K> point) const {
 	int nPoints = 10;
@@ -202,17 +210,20 @@ CubicBezierCurve::nearest(Point<K> point) const {
 	};
 	double t1 = indexToT(std::max(0, closest - 1));
 	double t2 = indexToT(std::min(nPoints - 1, closest + 1));
-	double closestT = (t1 + t2) / 2;
+	double closestT = indexToT(closest);
 	auto closestP = points[closest];
+
 	while (t2 - t1 > threshold) {
 		double mt = (t1 + t2) / 2;
 		double s1 = (t1 + mt) / 2;
 		double s2 = (mt + t2) / 2;
 		auto s1P = evaluate(s1);
 		auto s2P = evaluate(s2);
+		auto mtP = evaluate(mt);
 		double s1D2 = CGAL::squared_distance(s1P, point);
 		double s2D2 = CGAL::squared_distance(s2P, point);
-		double minD = std::min(std::min(s1D2, s2D2), minDist2);
+		double mtD2 = CGAL::squared_distance(mtP, point);
+		double minD = std::min(std::min(s1D2, s2D2), std::min(minDist2, mtD2));
 		if (minD == s1D2) {
 			minDist2 = minD;
 			closestT = s1;
@@ -223,13 +234,23 @@ CubicBezierCurve::nearest(Point<K> point) const {
 			closestT = s2;
 			closestP = s2P;
 			t1 = mt;
-		} else {
-			assert(minD == minDist2);
+		} else if (minD == mtD2) {
 			minDist2 = minD;
 			t1 = s1;
 			t2 = s2;
+			closestT = mt;
+			closestP = mtP;
+		} else {
+			assert(minD == minDist2);
+			assert(closestT == t1 || closestT == t2);
+			if (closestT == t1) {
+				t2 = s1;
+			} else {
+				t1 = s2;
+			}
 		}
 	}
+
 	return {closestT, closestP};
 }
 
@@ -561,12 +582,20 @@ CubicBezierSpline::split(const SplineParameter& param) const {
 	return {spline1, spline2};
 }
 
-std::pair<CubicBezierSpline, CubicBezierSpline>
-CubicBezierSpline::split(double param) const {
+CubicBezierSpline::Parameter CubicBezierSpline::parameter(double param) const {
 	double t = param * numCurves();
 	int curveIndex = static_cast<int>(t);
 	double frac = t - curveIndex;
-	return split({curveIndex, frac});
+	return {curveIndex, frac};
+}
+
+double CubicBezierSpline::doubleParameter(CubicBezierSpline::Parameter param) const {
+	return (param.curveIndex + param.t) / static_cast<double>(numCurves());
+}
+
+std::pair<CubicBezierSpline, CubicBezierSpline>
+CubicBezierSpline::split(double param) const {
+	return split(parameter(param));
 }
 
 Polyline<Inexact> CubicBezierSpline::polyline(int nEdgesPerCurve) const {
