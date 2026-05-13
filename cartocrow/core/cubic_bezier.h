@@ -334,6 +334,9 @@ class CubicBezierSpline {
 	/// Create an empty spline.
 	CubicBezierSpline();
 
+	/// Create a spline from a curve.
+	CubicBezierSpline(const CubicBezierCurve& curve);
+
 	/// Create a spline from a sequence of 3k+1 control points (Point<Inexact>).
 	template <class InputIterator>
 	CubicBezierSpline(InputIterator begin, InputIterator end) : m_c(begin, end)
@@ -347,6 +350,8 @@ class CubicBezierSpline {
 	void appendCurve(Point<K> source, Point<K> control, Point<K> target);
 	/// Append a cubic Bézier curve from two endpoints.
 	void appendCurve(Point<K> source, Point<K> target);
+	/// Append a cubic Bézier spline.
+	void appendSpline(const CubicBezierSpline& spline);
 
 	// === Helper structs ===
 	/// A Bézier spline is parameterized by a pair of a curve index and a curve parameter.
@@ -530,6 +535,8 @@ class CubicBezierSpline {
 	void reverse();
 	/// Approximates the spline with a polyline using the provided number of straight edges per curve.
 	Polyline<Inexact> polyline(int nEdgesPerCurve) const;
+	/// Return a transformed version of the Bézier spline.
+	CubicBezierSpline transform(const CGAL::Aff_transformation_2<Inexact>& t) const;
 	/// Computes the signed area of the spline.
 	/// Positive for counter-clockwise curves, negative otherwise.
 	/// For open splines it returns the signed area as if the curve was closed with a line segment between the endpoints.
@@ -541,6 +548,8 @@ class CubicBezierSpline {
 	std::pair<CubicBezierSpline, CubicBezierSpline> split(const SplineParameter& param) const;
 
 	std::pair<CubicBezierSpline, CubicBezierSpline> split(double param) const;
+
+	CubicBezierSpline sub(const SplineParameter& from, const SplineParameter& to) const;
 
 	/// Outputs the parameter values (\ref SplineParameter) at which the curvature flips sign.
 	template <class OutputIterator>
