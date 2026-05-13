@@ -41,17 +41,12 @@ Point<Inexact> CubicBezierCurve::target() const {
 
 Point<Inexact> CubicBezierCurve::control(int i) const {
 	assert(i >= 0 && i <= 3);
-	switch (i) {
-	case 0:
-		return m_p0;
-	case 1:
-		return m_p1;
-	case 2:
-		return m_p2;
-	case 3:
-		return m_p3;
-	default:
-		throw std::runtime_error("A cubic Bézier curve only has control points 0, 1, 2, and 3.");
+	switch(i) {
+		case 0: return m_p0;
+	    case 1: return m_p1;
+	    case 2: return m_p2;
+	    case 3: return m_p3;
+	    default: throw std::runtime_error("A cubic Bézier curve only has control points 0, 1, 2, and 3.");
 	}
 }
 
@@ -110,9 +105,11 @@ Number<Inexact> CubicBezierCurve::signedArea() const {
 	const auto& y2 = m_p2.y();
 	const auto& y3 = m_p3.y();
 
-	return -(x0 * (-2 * y1 - y2 + 3 * y3) + x1 * (2 * y0 - y2 - y3) + x2 * (y0 + y1 - 2 * y3) +
-	         x3 * (-3 * y0 + y1 + 2 * y2)) *
-	       3 / 20;
+	return -( x0 * (      - 2*y1 -   y2 + 3*y3)
+	        + x1 * ( 2*y0        -   y2 -   y3)
+	        + x2 * (   y0 +   y1        - 2*y3)
+	        + x3 * (-3*y0 +   y1 + 2*y2       )
+	            ) * 3 / 20;
 }
 
 CubicBezierCurve CubicBezierCurve::reversed() const {
@@ -126,7 +123,8 @@ void CubicBezierCurve::reverse() {
 	std::swap(m_v1, m_v2);
 }
 
-std::pair<CubicBezierCurve, CubicBezierCurve> CubicBezierCurve::split(const Number<Inexact>& t) const {
+std::pair<CubicBezierCurve, CubicBezierCurve> 
+CubicBezierCurve::split(const Number<Inexact>& t) const {
 	auto t_ = 1 - t;
 
 	auto x0 = t_ * m_v0 + t * m_v1;
@@ -144,7 +142,8 @@ std::pair<CubicBezierCurve, CubicBezierCurve> CubicBezierCurve::split(const Numb
 	return {b1, b2};
 }
 
-CubicBezierCurve CubicBezierCurve::sub(const Number<Inexact>& t1, const Number<Inexact>& t2) const {
+CubicBezierCurve 
+CubicBezierCurve::sub(const Number<Inexact>& t1, const Number<Inexact>& t2) const {
 	auto [_, tail] = split(t1);
 	double t2_ = (t2 - t1) / (1 - t1);
 	return tail.split(t2_).first;
@@ -152,8 +151,7 @@ CubicBezierCurve CubicBezierCurve::sub(const Number<Inexact>& t1, const Number<I
 
 Polyline<Inexact> CubicBezierCurve::polyline(int nEdges) const {
 	Polyline<Inexact> pl;
-	if (nEdges < 1)
-		return pl;
+	if (nEdges < 1) return pl;
 
 	samplePoints(nEdges + 1, std::back_inserter(pl));
 
@@ -253,8 +251,7 @@ CubicBezierCurve::CurvePoint CubicBezierCurve::nearest(Point<K> point) const {
 	return {closestT, closestP};
 }
 
-std::tuple<CubicBezierCurve::CurvePoint, CubicBezierCurve::CurvePoint, CubicBezierCurve::CurvePoint,
-           CubicBezierCurve::CurvePoint>
+std::tuple<CubicBezierCurve::CurvePoint, CubicBezierCurve::CurvePoint, CubicBezierCurve::CurvePoint, CubicBezierCurve::CurvePoint>
 CubicBezierCurve::extrema() const {
 	auto a = 3 * (-m_v0 + 3 * m_v1 - 3 * m_v2 + m_v3);
 	auto b = 6 * (m_v0 - 2 * m_v1 + m_v2);
