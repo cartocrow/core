@@ -14,7 +14,6 @@ add_subdirectory(core)
 add_subdirectory(circle_segment_helpers)
 add_subdirectory(datastructures)
 add_subdirectory(renderer)
-add_subdirectory(necklace_map)
 if (NOT EMSCRIPTEN)
     add_subdirectory(reader)
     add_subdirectory(widgets)
@@ -22,25 +21,23 @@ endif()
 
 add_library(cartocrow_lib INTERFACE)
 if (NOT EMSCRIPTEN)
-target_link_libraries(
-    cartocrow_lib INTERFACE
-    core
-    circle_segment_helpers
-    datastructures
-    renderer
-    reader
-    necklace_map
-    widgets
+	target_link_libraries(
+		cartocrow_lib INTERFACE
+		core
+		circle_segment_helpers
+        datastructures
+		renderer
+		reader
+		widgets
 )
 else()
-target_link_libraries(
-    cartocrow_lib INTERFACE
-    core
-    datastructures
-    circle_segment_helpers
-    renderer
-    necklace_map
-)
+	target_link_libraries(
+		cartocrow_lib INTERFACE
+		core
+		circle_segment_helpers
+        datastructures
+		renderer
+	)
 endif()
 
 cartocrow_install_module(cartocrow_lib)

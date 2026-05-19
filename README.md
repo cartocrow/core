@@ -14,7 +14,6 @@ This repository consists of the following subdirectories:
 
 * `cartocrow`: the library itself, with subdirectories for each module
 * `test`: unit tests for each module
-* `frontend`: the command-line frontend
 * `demos`: a collection of GUI applications serving as a demonstration of various parts of the algorithms implemented
 
 
@@ -200,17 +199,7 @@ CartoCrow/core can now be used in C++ projects that are compiled with Emscripten
 
 ## Usage
 
-CartoCrow provides a command-line application, simply called `cartocrow`, which can be used to generate maps in SVG format. To use it, you need a JSON file describing the map to generate, which can then be passed to `cartocrow`:
-
-```bash
-build/frontend/cartocrow <input-json> <output-svg> [<map-input>]
-```
-
-We provide some sample input data to generate a necklace map depicting the population of all countries in Europe:
-
-```bash
-build/frontend/cartocrow data/europe-population-necklace.json output.svg data/europe.ipe
-```
+To generate maps with CartoCrow, besides the core, you'll need to use a module for the specific type of map you want. See the list of repositories [here](https://github.com/cartocrow).
 
 
 ## License

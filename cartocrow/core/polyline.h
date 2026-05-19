@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,8 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CARTOCROW_POLYLINE_H
-#define CARTOCROW_POLYLINE_H
+#pragma once
 
 #include <CGAL/Point_2.h>
 #include <CGAL/Segment_2.h>
@@ -155,5 +152,3 @@ Polyline<Inexact> approximate(const Polyline<K>& p) {
 
 Polyline<Exact> pretendExact(const Polyline<Inexact>& p);
 }
-
-#endif //CARTOCROW_POLYLINE_H

@@ -7,7 +7,6 @@
 #include <variant>
 
 #include "cartocrow/core/core.h"
-#include "cartocrow/core/timer.h"
 
 using namespace cartocrow;
 
