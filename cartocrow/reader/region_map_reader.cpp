@@ -9,7 +9,7 @@
 
 #include "cartocrow/reader/ipe_reader.h"
 
-#include "cartocrow/core/centroid.h"
+#include "cartocrow/core/polygon_helpers.h"
 
 namespace cartocrow {
 

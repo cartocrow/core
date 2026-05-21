@@ -10,8 +10,6 @@
 #include <vector>
 #include <CGAL/number_utils.h>
 
-#include "../core/centroid.h"
-
 namespace cartocrow {
 
 bool isZero(double x) {
