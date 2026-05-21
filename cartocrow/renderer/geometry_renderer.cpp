@@ -89,6 +89,12 @@ void GeometryRenderer::draw(const PolylineSet<Inexact>& ps) {
 	draw(path);
 }
 
+void GeometryRenderer::draw(const PointSet<Inexact>& ps) {
+	for (const auto& p : ps.points) {
+		draw(p);
+	}
+}
+
 void GeometryRenderer::draw(const PolygonWithHoles<Inexact>& p) {
 	RenderPath path;
 	path << p;
@@ -100,6 +106,14 @@ void GeometryRenderer::draw(const PolygonSet<Inexact>& ps) {
 	ps.polygons_with_holes(std::back_inserter(polygons));
 	RenderPath path;
 	for (const auto& p : polygons) {
+		path << p;
+	}
+	draw(path);
+}
+
+void GeometryRenderer::draw(const PolygonSetRaw<Inexact>& ps) {
+	RenderPath path;
+	for (const auto& p : ps.polygons_with_holes) {
 		path << p;
 	}
 	draw(path);

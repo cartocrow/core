@@ -3,7 +3,7 @@
 // Do not include this file, but the .h file instead
 // -----------------------------------------------------------------------------
 
-namespace cartocrow::datastructures {
+namespace cartocrow::data_structures {
 
 	namespace detail {
 
@@ -295,4 +295,4 @@ namespace cartocrow::datastructures {
 			&& a.y() - prec <= b.y() && b.y() <= a.y() + prec;
 	}
 
-} // namespace cartocrow::datastructures
+} // namespace cartocrow::data_structures

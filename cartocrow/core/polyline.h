@@ -22,6 +22,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "core.h"
 
 namespace cartocrow {
+template <class K> 
+CGAL::Point_2<K> projection(const CGAL::Segment_2<K>& seg, const CGAL::Point_2<K>& p) {
+	Line<K> l = seg.supporting_line();
+	auto q = l.projection(p);
+	auto s = (q - seg.source()) * (seg.target() - seg.source()) / seg.squared_length();
+	if (s < 0)
+		return seg.source();
+	if (s > 1)
+		return seg.target();
+	return q;
+}
+
 template <class Segment_>
 class Polyline_Segment_ptr
 {
@@ -134,6 +146,21 @@ template <class K> class Polyline {
 			transformed.push_back(pt.transform(trans));
 		}
 		return transformed;
+	}
+	CGAL::Point_2<K> nearest(const CGAL::Point_2<K>& p) const {
+		CGAL::Point_2<K> closest;
+		Number<K> minDist2 = std::numeric_limits<Number<K>>::infinity();
+
+		for (auto eit = edges_begin(); eit != edges_end(); ++eit) {
+			auto proj = projection(*eit, p);
+			auto dist2 = CGAL::squared_distance(p, proj);
+			if (dist2 < minDist2) {
+				minDist2 = dist2;
+				closest = proj;
+			}
+		}
+
+		return closest;
 	}
   private:
 	std::vector<CGAL::Point_2<K>> m_points;

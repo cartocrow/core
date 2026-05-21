@@ -2,9 +2,9 @@
 
 #include <cartocrow/core/core.h>
 
-namespace cartocrow::datastructures {
+namespace cartocrow::data_structures {
 
-	template <typename QT> concept QuadTreeTraits = requires(typename QT::Element& elt, Rectangle<typename QT::Kernel>& rect) {
+	template <typename QT> concept QuadTreeTraits = requires(typename QT::Element elt, Rectangle<typename QT::Kernel>& rect) {
 
 		typename QT::Element;
 		typename QT::Kernel;
@@ -27,14 +27,14 @@ namespace cartocrow::datastructures {
 	public:
 		using Kernel = QT::Kernel;
 		using Element = QT::Element;
-		using ElementCallback = std::function<void(Element&)>;
+		using ElementCallback = std::function<void(Element)>;
 
 		QuadTree(Rectangle<Kernel>& box, int depth, Number<Kernel> fuzz);
 		~QuadTree();
 
 		void clear();
-		void insert(Element& elt);
-		bool remove(Element& elt);
+		void insert(Element elt);
+		bool remove(Element elt);
 
 		void findOverlapped(Rectangle<Kernel>& query, ElementCallback act);
 
@@ -53,9 +53,9 @@ namespace cartocrow::datastructures {
 
 		void findOverlappedRecursive(Node* n, Rectangle<Kernel>& query, ElementCallback act);
 
-		template <bool extend> Node* find(Element& elt);
+		template <bool extend> Node* find(Element elt);
 	};
 
-} // namespace cartocrow::datastructures
+} // namespace cartocrow::data_structures
 
 #include "quad_tree.hpp"
