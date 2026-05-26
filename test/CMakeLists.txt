@@ -1,11 +1,11 @@
 set(TEST_SOURCES "cartocrow_test.cpp"
-	"data_structures/graph_2.cpp"
 	"core/cubic_bezier.cpp"
 	"core/core.cpp"
 	"core/polygon_helpers.cpp"
 	"core/region_arrangement.cpp"
 	"core/region_map.cpp"
 	"renderer/ipe_renderer.cpp"
+	"data_structures/graph_2.cpp"
 )
 
 
