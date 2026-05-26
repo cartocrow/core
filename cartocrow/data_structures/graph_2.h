@@ -130,14 +130,19 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 		if (this == &other)
 			return *this;
 
-		for (Vertex_handle v : m_vertices) {
-			delete v;
+		clear();
+
+		const size_t num_v = other.number_of_vertices();
+		m_vertices.resize(num_v);
+		for (Graph_map_base* m : m_vertex_maps) {
+			m->resize(num_v);
 		}
-		for (Edge_handle e : m_edges) {
-			delete e;
+
+		const size_t num_e = other.number_of_edges();
+		m_edges.resize(num_e);
+		for (Graph_map_base* m : m_edge_maps) {
+			m->resize(num_e);
 		}
-		m_vertices.resize(other.number_of_vertices());
-		m_edges.resize(other.number_of_edges());
 
 		m_oriented = other.m_oriented;
 		m_sorted = other.m_sorted;
@@ -265,10 +270,17 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 	}
 
 	void clear() {
-		int last = m_vertices.size() - 1;
-		while (last >= 0) {
-			remove_vertex(m_vertices[last]);
-			last--;
+		for (Vertex_handle v : m_vertices) {
+			delete v;
+		}
+		for (Edge_handle e : m_edges) {
+			delete e;
+		}
+		for (Graph_map_base* m : m_vertex_maps) {
+			m->clear();
+		}
+		for (Graph_map_base* m : m_edge_maps) {
+			m->clear();
 		}
 	}
 
@@ -277,15 +289,12 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 		const int index = v->m_index = m_vertices.size();
 		m_vertices.push_back(v);
 		for (Graph_map_base* m : m_vertex_maps) {
-			m->index_updated(-1, index);
+			m->add_index();
 		}
 		return v;
 	}
 	void remove_vertex(Vertex_handle v) {
 		const int index = v->m_index;
-		for (Graph_map_base* m : m_vertex_maps) {
-			m->index_updated(index, -1);
-		}
 		for (Edge_handle e : v->m_incident) {
 			remove_edge(e);
 		}
@@ -293,11 +302,15 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 		if (index != last) {
 			m_vertices[index] = m_vertices[last];
 			m_vertices[index]->m_index = index;
-
 			for (Graph_map_base* m : m_vertex_maps) {
-				m->index_updated(last, index);
+				m->remove_index(index);
+			}
+		} else {
+			for (Graph_map_base* m : m_vertex_maps) {
+				m->remove_last_index();
 			}
 		}
+		
 		m_vertices.pop_back();
 		delete v;
 	}
@@ -310,7 +323,7 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 
 		std::vector<Edge_handle>& source_inc = source->m_incident;
 		std::vector<Edge_handle>& target_inc = target->m_incident;
-		
+
 		// Make sure orientation is preserved
 		source_inc.push_back(e);
 		if (target_inc.empty()) {
@@ -321,7 +334,7 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 		}
 
 		for (Graph_map_base* m : m_edge_maps) {
-			m->index_updated(-1, index);
+			m->add_index();
 		}
 
 		return e;
@@ -329,9 +342,6 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 	void remove_edge(Edge_handle e) {
 
 		const int index = e->m_index;
-		for (Graph_map_base* m : m_edge_maps) {
-			m->index_updated(index, -1);
-		}
 
 		auto& sInc = e->m_source->m_incident;
 		auto& tInc = e->m_target->m_incident;
@@ -344,7 +354,11 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 			m_edges[index]->m_index = index;
 
 			for (Graph_map_base* m : m_edge_maps) {
-				m->index_updated(last, index);
+				m->remove_index(index);
+			}
+		} else {
+			for (Graph_map_base* m : m_edge_maps) {
+				m->remove_last_index();
 			}
 		}
 		m_edges.pop_back();
@@ -595,10 +609,7 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 	    : m_point(std::move(point)), m_data(std::move(data)) {}
 
   public:
-	size_t graph_index() {
-		return m_index;
-	}
-	const size_t graph_index() const {
+	size_t graph_index() const {
 		return m_index;
 	}
 	const Point_2& point() const {
@@ -697,10 +708,7 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits> clas
 	}
 
   public:
-	size_t graph_index() {
-		return m_index;
-	}
-	const size_t graph_index() const {
+	size_t graph_index() const {
 		return m_index;
 	}
 
@@ -756,7 +764,14 @@ class Graph_map_base {
 	friend class Graph_2;
 
   protected:
-	virtual void index_updated(const int old_index, const int new_index) {}
+	void clear() {
+		resize(0);
+	}
+
+	virtual void resize(const size_t size) = 0;
+	virtual void add_index() = 0;
+	virtual void remove_index(const size_t index) = 0;
+	virtual void remove_last_index() = 0;
 };
 
 template <class G, class E, typename T> class Graph_map : public Graph_map_base {
@@ -768,30 +783,21 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 	std::vector<T> m_vec;
 	const T m_init;
 
-	void ensureIndex(const int index) {
-		if (m_vec.size() <= index) {
-			m_vec.resize(index, m_init);
-		}
+	void resize(const size_t size) override {
+		m_vec.resize(size, m_init);
 	}
 
-	void index_updated(const int old_index, const int new_index) override {
-		if (old_index < 0) {
-			// new vertex
-			if (m_vec.size() <= new_index) {
-				m_vec.resize(new_index + 1, m_init);
-			}
+	void add_index() override {
+		m_vec.push_back(m_init);
+	}
 
-			m_vec[new_index] = m_init;
-		} else if (new_index < 0) {
-			// removed vertex: skip
-		} else {
-			// copy
-			if (m_vec.size() <= new_index) {
-				m_vec.resize(new_index + 1, m_init);
-			}
+	void remove_index(const size_t index) override {
+		m_vec[index] = m_vec[m_vec.size() - 1];
+		m_vec.pop_back();
+	}
 
-			m_vec[new_index] = m_vec[old_index];
-		}
+	void remove_last_index() override {
+		m_vec.pop_back();
 	}
 
   public:
