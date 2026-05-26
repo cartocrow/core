@@ -7,7 +7,7 @@ using namespace cartocrow;
 
 TEST_CASE("Graph static vertex map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, Exact>;
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, SimpleGraph>;
 	using V = G::Vertex_handle;
 	using P = Point<Exact>;
 
@@ -33,7 +33,7 @@ TEST_CASE("Graph static vertex map") {
 
 TEST_CASE("Graph vertex map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, Exact>;
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, SimpleGraph>;
 	using V = G::Vertex_handle;
 	using P = Point<Exact>;
 
@@ -63,7 +63,7 @@ TEST_CASE("Graph vertex map") {
 
 TEST_CASE("Graph static edge map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, Exact>;
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, SimpleGraph>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
@@ -90,7 +90,7 @@ TEST_CASE("Graph static edge map") {
 
 TEST_CASE("Graph edge map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, Exact>;
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, SimpleGraph>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
@@ -121,4 +121,57 @@ TEST_CASE("Graph edge map") {
 	map[f] = 5;
 
 	CHECK(map[f] == 5);
+}
+
+TEST_CASE("Graph history") {
+
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, HistoricSimpleGraph>;
+	using V = G::Vertex_handle;
+	using E = G::Edge_handle;
+	using P = Point<Exact>;
+
+	G g;
+	V u = g.add_vertex(P(0, 0));
+	V v = g.add_vertex(P(0, 0));
+	V w = g.add_vertex(P(0, 0));
+
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.can_undo());
+	CHECK(!g.can_redo());
+
+	g.undo();
+
+	CHECK(g.number_of_vertices() == 2);
+	CHECK(g.can_undo());
+	CHECK(g.can_redo());
+
+	g.undo();
+
+	CHECK(g.number_of_vertices() == 1);
+	CHECK(g.can_undo());
+	CHECK(g.can_redo());
+
+	g.undo();
+
+	CHECK(g.number_of_vertices() == 0);
+	CHECK(!g.can_undo());
+	CHECK(g.can_redo());
+	
+	g.redo();
+
+	CHECK(g.number_of_vertices() == 1);
+	CHECK(g.can_undo());
+	CHECK(g.can_redo());
+
+	g.redo();
+	
+	CHECK(g.number_of_vertices() == 2);
+	CHECK(g.can_undo());
+	CHECK(g.can_redo());
+
+	g.redo();
+
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.can_undo());
+	CHECK(!g.can_redo());
 }
