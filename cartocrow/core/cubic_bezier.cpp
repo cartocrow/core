@@ -420,7 +420,7 @@ void CubicBezierSpline::appendCurve(Point<K> source, Point<K> target) {
 void CubicBezierSpline::appendSpline(const CubicBezierSpline& spline) {
 	for (int i = 0; i < spline.controlPoints().size(); ++i) {
 		if (i == 0 && !m_c.empty()) {
-			assert(m_c.back() == curve.source());
+			assert(m_c.back() == spline.source());
 			continue;
 		}
 		m_c.push_back(spline.controlPoint(i));

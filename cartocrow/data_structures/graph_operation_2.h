@@ -18,20 +18,15 @@ class Operation {
 		m_past = true;
 		redo_internal();
 	}
+	virtual ~Operation() {}
 };
 
 class OperationGroup {
   private:
-	std::vector<Operation*> ops;
+	std::vector<std::unique_ptr<Operation>> ops;
   public:
-	~OperationGroup() {
-		for (Operation* op : ops) {
-			delete op;
-		}
-	}
-
-	void add_operation(Operation* op) {
-		ops.push_back(op);
+	void add_operation(std::unique_ptr<Operation> op) {
+		ops.push_back(std::move(op));
 	}
 
 	void undo() {
@@ -41,7 +36,7 @@ class OperationGroup {
 	}
 
 	void redo() {
-		for (Operation* op : ops) {
+		for (auto& op : ops) {
 			op->redo();
 		}
 	}
