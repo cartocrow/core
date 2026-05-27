@@ -73,8 +73,8 @@ TEST_CASE("Graph static edge map") {
 	V v = g.add_vertex(P(0, 0));
 	V w = g.add_vertex(P(0, 0));
 
-	E e = g.add_edge(u, v, Segment<Exact>(P(0, 0), P(0, 0)));
-	E f = g.add_edge(v, w, Segment<Exact>(P(0, 0), P(0, 0)));
+	E e = g.add_edge(u, v);
+	E f = g.add_edge(v, w);
 
 	Graph_static_edge_map<G, int> map(g, 1);
 

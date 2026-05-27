@@ -9,6 +9,9 @@ set(HEADERS
 	quad_tree.h
 	quad_tree.hpp
 	graph_2.h
+	graph_traits_2.h
+	graph_map_2.h
+	graph_operation_2.h
 	graph_curve_traits_2.h
 	graph_segment_traits_2.h
 	straight_graph_2.h

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "graph_curve_traits_2.h"
+#include "graph_map_2.h"
+#include "graph_operation_2.h"
+#include "graph_traits_2.h"
 
 namespace utils {
 template <typename T> bool vectorRemove(T elt, std::vector<T>& vec) {
@@ -16,101 +19,29 @@ template <typename T> bool vectorRemove(T elt, std::vector<T>& vec) {
 
 namespace cartocrow {
 
-template <class T> concept GraphMode_2 = requires {
-	T::historic;
-	requires std::is_same_v<bool const, decltype(T::historic)>;
-	T::multigraph;
-	requires std::is_same_v<bool const, decltype(T::multigraph)>;
-};
-
-struct HistoricSimpleGraph {
-	static constexpr bool historic = true;
-	static constexpr bool multigraph = false;
-};
-
-struct SimpleGraph {
-	static constexpr bool historic = false;
-	static constexpr bool multigraph = false;
-};
-
-class Operation {
-
-  public:
-	virtual void undo() = 0;
-	virtual void redo() = 0;
-};
-
-template <class G> class AddVertex : public Operation {
-  private:
-	G& m_graph;
-	G::Vertex_handle m_vertex;
-
-  public:
-	AddVertex(G& graph, G::Vertex_handle v) : m_graph(graph), m_vertex(v) {}
-
-	void undo() override {
-		m_graph.m_vertices.pop_back();
-	}
-	void redo() override {
-		m_graph.m_vertices.push_back(m_vertex);
-	}
-};
-
-template <class G> class RemoveVertex : public Operation {
-  private:
-	G& m_graph;
-	G::Vertex_handle m_vertex;
-
-  public:
-	RemoveVertex(G& graph, G::Vertex_handle v) : m_graph(graph), m_vertex(v) {}
-
-	void undo() override {
-		const size_t index = m_vertex->graph_index();
-		if (index == m_graph.m_vertices.size()) {
-			m_graph.m_vertices.push_back(m_vertex);
-		} else {
-			m_graph.m_vertices.push_back(m_graph.m_vertices[index]);
-			m_graph.m_vertices[index] = m_vertex;
-		}
-	}
-	void redo() override {
-		const size_t index = m_vertex->graph_index();
-		const size_t last = m_graph.m_vertices.size() - 1;
-		if (index != last) {
-			m_graph.m_vertices[index] = m_graph.m_vertices[last];
-		}
-		m_graph.m_vertices.pop_back();
-	}
-};
-
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2_vertex;
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2_edge;
 
-class Graph_map_base;
-template <class G, typename T> class Graph_vertex_map;
-template <class G, typename T> class Graph_edge_map;
-
-template <class G, typename T> class Graph_static_vertex_map;
-template <class G, typename T> class Graph_static_edge_map;
-
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2 {
-	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphMode>;
-	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphMode>;
+	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	template <typename G, typename T> friend class Graph_vertex_map;
 	template <typename G, typename T> friend class Graph_edge_map;
 
 	template <class G> friend class AddVertex;
 	template <class G> friend class RemoveVertex;
+	template <class G> friend class AddEdge;
+	template <class G> friend class RemoveEdge;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphMode>;
+	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex_handle = Vertex*;
 	using Vertex_const_handle = const Vertex*;
 
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphMode>;
+	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Edge_handle = Edge*;
 	using Edge_const_handle = const Edge*;
 
@@ -141,7 +72,7 @@ class Graph_2 {
 	std::vector<Graph_map_base*> m_edge_maps;
 
 	using HistoryContainer =
-	    std::conditional<GraphMode::historic, std::vector<Operation*>, std::monostate>::type;
+	    std::conditional<GraphTraits::historic, std::vector<Operation*>, std::monostate>::type;
 
 	HistoryContainer m_past;
 	HistoryContainer m_future;
@@ -170,7 +101,7 @@ class Graph_2 {
 
   public:
 	class Vertex_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
 	  private:
 		Vertex_container& m_container;
@@ -188,7 +119,7 @@ class Graph_2 {
 	};
 
 	class Edge_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
 	  private:
 		Edge_container& m_container;
@@ -265,6 +196,23 @@ class Graph_2 {
 		*this = other;
 	}
 
+	~Graph_2() {
+		for (Vertex_handle v : m_vertices) {
+			delete v;
+		}
+		for (Edge_handle e : m_edges) {
+			delete e;
+		}
+		if constexpr (GraphTraits::historic) {
+			for (Operation* op : m_past) {
+				delete op;
+			}
+			for (Operation* op : m_future) {
+				delete op;
+			}
+		}
+	}
+
 	Graph_2 transform(CGAL::Aff_transformation_2<Kernel> trans) const {
 		Graph_2 transformed;
 
@@ -308,7 +256,7 @@ class Graph_2 {
 		return transformed;
 	}
 
-	Vertex_range vertices() {
+	Vertex_range vertices() const {
 		return Vertex_range(m_vertices);
 	}
 	Vertex_iterator vertices_begin() {
@@ -318,7 +266,7 @@ class Graph_2 {
 		return m_vertices.end();
 	}
 
-	Edge_range edges() {
+	Edge_range edges() const {
 		return Edge_range(m_edges);
 	}
 	Edge_iterator edges_begin() {
@@ -355,6 +303,16 @@ class Graph_2 {
 		for (Edge_handle e : m_edges) {
 			delete e;
 		}
+		if constexpr (GraphTraits::historic) {
+			for (Operation* op : m_past) {
+				delete op;
+			}
+			m_past.clear();
+			for (Operation* op : m_future) {
+				delete op;
+			}
+			m_future.clear();
+		}
 		for (Graph_map_base* m : m_vertex_maps) {
 			m->clear();
 		}
@@ -371,7 +329,7 @@ class Graph_2 {
 			m->add_index();
 		}
 
-		if constexpr (GraphMode::historic) {
+		if constexpr (GraphTraits::historic) {
 			m_past.push_back(new AddVertex(*this, v));
 		}
 
@@ -397,12 +355,17 @@ class Graph_2 {
 
 		m_vertices.pop_back();
 
-		if constexpr (GraphMode::historic) {
+		if constexpr (GraphTraits::historic) {
 			m_past.push_back(new RemoveVertex(*this, v));
 		} else {
 			delete v;
 		}
 	}
+	Edge_handle add_edge(Vertex_handle source,
+	                     Vertex_handle target) requires std::same_as<Curve_2, Segment<Kernel>> {
+		return add_edge(source, target, Curve_2(source->m_point, target->m_point));
+	}
+
 	Edge_handle add_edge(Vertex_handle source, Vertex_handle target, const Curve_2& curve) {
 		Edge_handle e = new Edge(source, target, curve);
 		const int index = e->m_index = m_edges.size();
@@ -454,34 +417,46 @@ class Graph_2 {
 		delete e;
 	}
 
-	bool can_undo() {
-		if constexpr (GraphMode::historic) {
-			return !m_past.empty();
-		} else {
-			return false;
+	bool can_undo() const requires GraphTraits::historic {
+		return !m_past.empty();
+	}
+	void undo() requires GraphTraits::historic {
+		Operation* op = m_past.back();
+		m_past.pop_back();
+		op->undo();
+		m_future.push_back(op);
+	}
+	void undo_all() requires GraphTraits::historic {
+		while (!m_past.empty()) {
+			undo();
 		}
 	}
-	void undo() {
-		if constexpr (GraphMode::historic) {
+	bool can_redo() const requires GraphTraits::historic {
+		return !m_future.empty();
+	}
+	void redo() requires GraphTraits::historic {
+		Operation* op = m_future.back();
+		m_future.pop_back();
+		op->redo();
+		m_past.push_back(op);
+	}
+	void redo_all() requires GraphTraits::historic {
+		while (!m_future.empty()) {
+			redo();
+		}
+	}
+	void forget_past() requires GraphTraits::historic {
+		while (!m_past.empty()) {
 			Operation* op = m_past.back();
 			m_past.pop_back();
-			op->undo();
-			m_future.push_back(op);
+			delete op;
 		}
 	}
-	bool can_redo() {
-		if constexpr (GraphMode::historic) {
-			return !m_future.empty();
-		} else {
-			return false;
-		}
-	}
-	void redo() {
-		if constexpr (GraphMode::historic) {
-			Operation* op = m_future.back();			
+	void forget_future() requires GraphTraits::historic {
+		while (!m_future.empty()) {
+			Operation* op = m_future.back();
 			m_future.pop_back();
-			op->redo();
-			m_past.push_back(op);
+			delete op;
 		}
 	}
 
@@ -629,7 +604,7 @@ class Graph_2 {
 
 		m_oriented = true;
 	}
-	bool verify_oriented() {
+	bool verify_oriented() const {
 		for (Vertex_handle v = m_vertices.begin(); v != m_vertices.end(); ++v) {
 			if (v->degree() != 2)
 				continue; // irrelevant for orientation
@@ -645,7 +620,7 @@ class Graph_2 {
 
 		return true;
 	}
-	bool is_oriented() {
+	bool is_oriented() const {
 		assert(!m_oriented || verify_oriented());
 		return m_oriented;
 	}
@@ -663,7 +638,7 @@ class Graph_2 {
 		}
 		m_sorted = true;
 	}
-	bool verify_sorted() {
+	bool verify_sorted() const {
 		for (const Vertex_const_handle v : m_vertices) {
 			if (v->degree() > 2) {
 				CGAL::Direction_2<Kernel> dir_prev =
@@ -680,7 +655,7 @@ class Graph_2 {
 		}
 		return true;
 	}
-	bool is_sorted() {
+	bool is_sorted() const {
 		assert(!m_sorted || verify_sorted());
 		return m_sorted;
 	}
@@ -701,15 +676,15 @@ class Graph_2 {
 	}
 };
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2_vertex {
-	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
-	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphMode>;
+	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphMode>;
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphMode>;
-	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
+	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
 	using Edge_handle = Graph::Edge_handle;
@@ -791,15 +766,15 @@ class Graph_2_vertex {
 	}
 };
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2_edge {
-	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
-	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphMode>;
+	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphMode>;
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphMode>;
-	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphMode>;
+	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
 	using Edge_handle = Graph::Edge_handle;
@@ -878,140 +853,6 @@ class Graph_2_edge {
 	}
 	const Edge_data& data() const {
 		return m_data;
-	}
-};
-
-class Graph_map_base {
-
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphMode_2 GraphMode>
-	friend class Graph_2;
-
-  protected:
-	void clear() {
-		resize(0);
-	}
-
-	virtual void resize(const size_t size) = 0;
-	virtual void add_index() = 0;
-	virtual void remove_index(const size_t index) = 0;
-	virtual void remove_last_index() = 0;
-};
-
-template <class G, class E, typename T> class Graph_map : public Graph_map_base {
-
-	friend G;
-
-  protected:
-	G& m_graph;
-	std::vector<T> m_vec;
-	const T m_init;
-
-	void resize(const size_t size) override {
-		m_vec.resize(size, m_init);
-	}
-
-	void add_index() override {
-		m_vec.push_back(m_init);
-	}
-
-	void remove_index(const size_t index) override {
-		m_vec[index] = m_vec[m_vec.size() - 1];
-		m_vec.pop_back();
-	}
-
-	void remove_last_index() override {
-		m_vec.pop_back();
-	}
-
-  public:
-	Graph_map(G& graph, const T init, int cnt) : m_init(init), m_graph(graph) {
-		m_vec.resize(cnt, m_init);
-	}
-
-	T& operator[](const E elt) {
-		return m_vec[elt->graph_index()];
-	}
-};
-
-template <class G, typename T>
-class Graph_vertex_map : public Graph_map<G, typename G::Vertex_handle, T> {
-
-  public:
-	Graph_vertex_map(G& graph, const T init)
-	    : Graph_map<G, G::Vertex_handle, T>(graph, init, graph.number_of_vertices()) {
-		this->m_graph.add_vertex_map(this);
-	}
-
-	~Graph_vertex_map() {
-		this->m_graph.remove_vertex_map(this);
-	}
-};
-
-template <class G, typename T> class Graph_static_vertex_map {
-
-  public:
-	using Vertex_handle = G::Vertex_handle;
-
-  private:
-	std::vector<T> m_vec;
-
-  public:
-	Graph_static_vertex_map(G& graph, const T init) {
-		m_vec.resize(graph.number_of_vertices(), init);
-	}
-
-	T& operator[](const Vertex_handle vtx) {
-		return m_vec[vtx->graph_index()];
-	}
-};
-
-template <class G> class Graph_vertex_index_map {
-  public:
-	using Vertex_handle = G::Vertex_handle;
-
-	size_t operator[](const Vertex_handle vtx) {
-		return vtx->graph_index();
-	}
-};
-
-template <class G, typename T>
-class Graph_edge_map : public Graph_map<G, typename G::Edge_handle, T> {
-
-  public:
-	Graph_edge_map(G& graph, const T init)
-	    : Graph_map<G, typename G::Edge_handle, T>(graph, init, graph.number_of_edges()) {
-		this->m_graph.add_edge_map(this);
-	}
-
-	~Graph_edge_map() {
-		this->m_graph.remove_edge_map(this);
-	}
-};
-
-template <class G, typename T> class Graph_static_edge_map {
-
-  public:
-	using Edge_handle = G::Edge_handle;
-
-  private:
-	std::vector<T> m_vec;
-
-  public:
-	Graph_static_edge_map(G& graph, const T init) {
-		m_vec.resize(graph.number_of_edges(), init);
-	}
-
-	T& operator[](const Edge_handle edge) {
-		return m_vec[edge->graph_index()];
-	}
-};
-
-template <class G> class Graph_edge_index_map {
-  public:
-	using Edge_handle = G::Edge_handle;
-
-	size_t operator[](const Edge_handle edge) {
-		return edge->graph_index();
 	}
 };
 
