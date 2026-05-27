@@ -20,6 +20,33 @@ class Operation {
 	}
 };
 
+class OperationGroup {
+  private:
+	std::vector<Operation*> ops;
+  public:
+	~OperationGroup() {
+		for (Operation* op : ops) {
+			delete op;
+		}
+	}
+
+	void add_operation(Operation* op) {
+		ops.push_back(op);
+	}
+
+	void undo() {
+		for (auto it = ops.rbegin(); it != ops.rend(); ++it) {			
+			(*it)->undo();
+		}
+	}
+
+	void redo() {
+		for (Operation* op : ops) {
+			op->redo();
+		}
+	}
+};
+
 template <class G> class AddVertex : public Operation {
   private:
 	G& m_graph;
@@ -92,9 +119,21 @@ template <class G> class AddEdge : public Operation {
 
 	void undo_internal() override {
 		m_graph.m_edges.pop_back();
+
+		m_edge->m_source->remove_incident(m_edge);
+		m_edge->m_target->remove_incident(m_edge);
+
+		m_graph.ensure_traits(m_edge->m_source);
+		m_graph.ensure_traits(m_edge->m_target);
 	}
 	void redo_internal() override {
 		m_graph.m_edges.push_back(m_edge);
+
+		m_edge->m_source->m_incident.push_back(m_edge);
+		m_edge->m_target->m_incident.push_back(m_edge);
+
+		m_graph.ensure_traits(m_edge->source());
+		m_graph.ensure_traits(m_edge->target());
 	}
 };
 
@@ -121,6 +160,12 @@ template <class G> class RemoveEdge : public Operation {
 			m_graph.m_edges.push_back(m_graph.m_edges[index]);
 			m_graph.m_edges[index] = m_edge;
 		}
+
+		m_edge->m_source->m_incident.push_back(m_edge);
+		m_edge->m_target->m_incident.push_back(m_edge);
+
+		m_graph.ensure_traits(m_edge->source());
+		m_graph.ensure_traits(m_edge->target());
 	}
 	void redo_internal() override {
 		const size_t index = m_edge->graph_index();
@@ -129,6 +174,12 @@ template <class G> class RemoveEdge : public Operation {
 			m_graph.m_edges[index] = m_graph.m_edges[last];
 		}
 		m_graph.m_edges.pop_back();
+
+		m_edge->m_source->remove_incident(m_edge);
+		m_edge->m_target->remove_incident(m_edge);
+
+		m_graph.ensure_traits(m_edge->m_source);
+		m_graph.ensure_traits(m_edge->m_target);
 	}
 };
 

@@ -12,6 +12,7 @@ TEST_CASE("Graph static vertex map") {
 	using P = Point<Exact>;
 
 	G g;
+	g.initialize();
 	V u = g.add_vertex(P(0, 0));
 	V v = g.add_vertex(P(0, 0));
 
@@ -38,6 +39,7 @@ TEST_CASE("Graph vertex map") {
 	using P = Point<Exact>;
 
 	G g;
+	g.initialize();
 	V u = g.add_vertex(P(0, 0));
 	V v = g.add_vertex(P(0, 0));
 
@@ -69,6 +71,7 @@ TEST_CASE("Graph static edge map") {
 	using P = Point<Exact>;
 
 	G g;
+	g.initialize();
 	V u = g.add_vertex(P(0, 0));
 	V v = g.add_vertex(P(0, 0));
 	V w = g.add_vertex(P(0, 0));
@@ -96,12 +99,13 @@ TEST_CASE("Graph edge map") {
 	using P = Point<Exact>;
 
 	G g;
+	g.initialize();
 	V u = g.add_vertex(P(0, 0));
 	V v = g.add_vertex(P(0, 0));
 	V w = g.add_vertex(P(0, 0));
 
-	E e = g.add_edge(u, v, Segment<Exact>(P(0, 0), P(0, 0)));
-	E f = g.add_edge(v, w, Segment<Exact>(P(0, 0), P(0, 0)));
+	E e = g.add_edge(u, v);
+	E f = g.add_edge(v, w);
 
 	Graph_edge_map<G, int> map(g, 1);
 
@@ -131,9 +135,11 @@ TEST_CASE("Graph history") {
 	using P = Point<Exact>;
 
 	G g;
+	g.initialize();
 	V u = g.add_vertex(P(0, 0));
 	V v = g.add_vertex(P(0, 0));
 	V w = g.add_vertex(P(0, 0));
+
 
 	CHECK(g.number_of_vertices() == 3);
 	CHECK(g.can_undo());
@@ -174,4 +180,32 @@ TEST_CASE("Graph history") {
 	CHECK(g.number_of_vertices() == 3);
 	CHECK(g.can_undo());
 	CHECK(!g.can_redo());
+}
+
+TEST_CASE("Graph operations") {
+
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, SimpleGraph>;
+	using V = G::Vertex_handle;
+	using E = G::Edge_handle;
+	using P = Point<Exact>;
+
+	G g;
+	g.initialize();
+	V u = g.add_vertex(P(0, 0));
+	V v = g.add_vertex(P(1, 1));
+	V w = g.add_vertex(P(2, 0));
+
+	E e = g.add_edge(u, v);
+	E f = g.add_edge(v, w);
+
+	CHECK(g.is_initialized());
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.number_of_edges() == 2);
+
+	E ne = g.split_vertex(v, P(0,1), P(2,1));
+
+	CHECK(g.is_initialized());
+	CHECK(g.number_of_vertices() == 4);
+	CHECK(g.number_of_edges() == 3);
+
 }
