@@ -26,7 +26,6 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 	friend G;
 
   protected:
-	G& m_graph;
 	std::vector<T> m_vec;
 	const T m_init;
 
@@ -48,7 +47,7 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 	}
 
   public:
-	Graph_map(G& graph, const T init, int cnt) : m_init(init), m_graph(graph) {
+	Graph_map(const T init, int cnt) : m_init(init) {
 		m_vec.resize(cnt, m_init);
 	}
 
@@ -59,10 +58,11 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 
 template <class G, typename T>
 class Graph_vertex_map : public Graph_map<G, typename G::Vertex_handle, T> {
+	G& m_graph;
 
   public:
 	Graph_vertex_map(G& graph, const T init)
-	    : Graph_map<G, G::Vertex_handle, T>(graph, init, graph.number_of_vertices()) {
+	    : Graph_map<G, G::Vertex_handle, T>(init, graph.number_of_vertices()), m_graph(graph) {
 		this->m_graph.add_vertex_map(this);
 	}
 
@@ -80,7 +80,7 @@ template <class G, typename T> class Graph_static_vertex_map {
 	std::vector<T> m_vec;
 
   public:
-	Graph_static_vertex_map(G& graph, const T init) {
+	Graph_static_vertex_map(const G& graph, const T init) {
 		m_vec.resize(graph.number_of_vertices(), init);
 	}
 
@@ -100,10 +100,11 @@ template <class G> class Graph_vertex_index_map {
 
 template <class G, typename T>
 class Graph_edge_map : public Graph_map<G, typename G::Edge_handle, T> {
+	G& m_graph;
 
   public:
 	Graph_edge_map(G& graph, const T init)
-	    : Graph_map<G, typename G::Edge_handle, T>(graph, init, graph.number_of_edges()) {
+	    : Graph_map<G, typename G::Edge_handle, T>(init, graph.number_of_edges()), m_graph(graph) {
 		this->m_graph.add_edge_map(this);
 	}
 
@@ -121,7 +122,7 @@ template <class G, typename T> class Graph_static_edge_map {
 	std::vector<T> m_vec;
 
   public:
-	Graph_static_edge_map(G& graph, const T init) {
+	Graph_static_edge_map(const G& graph, const T init) {
 		m_vec.resize(graph.number_of_edges(), init);
 	}
 
