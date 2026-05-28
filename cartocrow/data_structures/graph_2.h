@@ -487,8 +487,8 @@ class Graph_2 {
 		}
 
 		const int index = v->m_index;
-		for (Edge_handle e : v->m_incident) {
-			remove_edge(e);
+		while (!v->m_incident.empty()) {
+			remove_edge(v->m_incident.back());
 		}
 		const int last = m_vertices.size() - 1;
 		if (index != last) {
