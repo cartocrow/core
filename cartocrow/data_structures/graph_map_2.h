@@ -17,6 +17,7 @@ class Graph_map_base {
 
 	virtual void resize(const size_t size) = 0;
 	virtual void add_index() = 0;
+	virtual void add_index(const size_t index) = 0;
 	virtual void remove_index(const size_t index) = 0;
 	virtual void remove_last_index() = 0;
 };
@@ -35,6 +36,11 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 
 	void add_index() override {
 		m_vec.push_back(m_init);
+	}
+
+	void add_index(const size_t index) override {
+		m_vec.push_back(m_vec[index]);
+		m_vec[index] = m_init;
 	}
 
 	void remove_index(const size_t index) override {

@@ -138,12 +138,24 @@ template <class G> class AddVertex : public Operation {
 	void forget_future() override {
 		delete m_vertex;
 	}
+	
+	static void add_vertex(G& g, typename G::Vertex_handle v) {
+		const int index = v->m_index = g.m_vertices.size();
+		m_vertices.push_back(v);
+		for (Graph_map_base* m : m_vertex_maps) {
+			m->add_index();
+		}
+	}
 
 	void undo() override {
 		m_graph.m_vertices.pop_back();
+
+		for (Graph_map_base* m : m_graph.m_vertex_maps) {
+			m->remove_last_index();
+		}
 	}
 	void redo() override {
-		m_graph.m_vertices.push_back(m_vertex);
+		add_vertex(m_graph, m_vertex);
 	}
 };
 
@@ -159,22 +171,41 @@ template <class G> class RemoveVertex : public Operation {
 		delete m_vertex;
 	}
 
+	static void remove_vertex(G& g, typename G::Vertex_handle v) {
+		const int index = v->m_index;
+		const int last = g.m_vertices.size() - 1;
+		if (index != last) {
+			g.m_vertices[index] = g.m_vertices[last];
+			g.m_vertices[index]->m_index = index;
+			for (Graph_map_base* m : g.m_vertex_maps) {
+				m->remove_index(index);
+			}
+		} else {
+			for (Graph_map_base* m : g.m_vertex_maps) {
+				m->remove_last_index();
+			}
+		}
+
+		g.m_vertices.pop_back();
+	}
+
 	void undo() override {
 		const size_t index = m_vertex->graph_index();
 		if (index == m_graph.m_vertices.size()) {
 			m_graph.m_vertices.push_back(m_vertex);
+			for (Graph_map_base* m : m_graph.m_vertex_maps) {
+				m->add_index();
+			}
 		} else {
 			m_graph.m_vertices.push_back(m_graph.m_vertices[index]);
 			m_graph.m_vertices[index] = m_vertex;
+			for (Graph_map_base* m : m_graph.m_vertex_maps) {
+				m->add_index(index);
+			}
 		}
 	}
 	void redo() override {
-		const size_t index = m_vertex->graph_index();
-		const size_t last = m_graph.m_vertices.size() - 1;
-		if (index != last) {
-			m_graph.m_vertices[index] = m_graph.m_vertices[last];
-		}
-		m_graph.m_vertices.pop_back();
+		remove_vertex(m_graph, m_vertex);
 	}
 };
 
@@ -190,6 +221,24 @@ template <class G> class AddEdge : public Operation {
 		delete m_edge;
 	}
 
+	static void add_edge(G& graph, G::Edge_handle e) {
+		graph.m_edges.push_back(e);
+
+		std::vector<Edge_handle>& source_inc = e->m_source->m_incident;
+		std::vector<Edge_handle>& target_inc = e->m_target->m_incident;
+
+		source_inc.push_back(e);
+		target_inc.push_back(e);
+
+		// TODO: we can be smarter about this
+		graph.ensure_traits(e->m_source);
+		graph.ensure_traits(e->m_target);
+
+		for (Graph_map_base* m : m_edge_maps) {
+			m->add_index();
+		}
+	}
+
 	void undo() override {
 		m_graph.m_edges.pop_back();
 
@@ -198,15 +247,13 @@ template <class G> class AddEdge : public Operation {
 
 		m_graph.ensure_traits(m_edge->m_source);
 		m_graph.ensure_traits(m_edge->m_target);
+
+		for (Graph_map_base* m : m_edge_maps) {
+			m->remove_last_index();
+		}
 	}
 	void redo() override {
-		m_graph.m_edges.push_back(m_edge);
-
-		m_edge->m_source->m_incident.push_back(m_edge);
-		m_edge->m_target->m_incident.push_back(m_edge);
-
-		m_graph.ensure_traits(m_edge->source());
-		m_graph.ensure_traits(m_edge->target());
+		add_edge(m_graph, m_edge);
 	}
 };
 
@@ -222,13 +269,44 @@ template <class G> class RemoveEdge : public Operation {
 		delete m_edge;
 	}
 
+	static void remove_edge(G& g, typename G::Edge_handle e) {
+		const int index = e->m_index;
+
+		e->m_source->remove_incident(e);
+		e->m_target->remove_incident(e);
+
+		g.ensure_traits(e->m_source);
+		g.ensure_traits(e->m_target);
+
+		const int last = g.m_edges.size() - 1;
+		if (index != last) {
+			g.m_edges[index] = g.m_edges[last];
+			g.m_edges[index]->m_index = index;
+
+			for (Graph_map_base* m : g.m_edge_maps) {
+				m->remove_index(index);
+			}
+		} else {
+			for (Graph_map_base* m : g.m_edge_maps) {
+				m->remove_last_index();
+			}
+		}
+		g.m_edges.pop_back();
+	}
+
 	void undo() override {
 		const size_t index = m_edge->graph_index();
 		if (index == m_graph.m_edges.size()) {
 			m_graph.m_edges.push_back(m_edge);
+			for (Graph_map_base* m : g.m_edge_maps) {
+				m->add_index();
+			}
 		} else {
 			m_graph.m_edges.push_back(m_graph.m_edges[index]);
 			m_graph.m_edges[index] = m_edge;
+			for (Graph_map_base* m : g.m_edge_maps) {
+				m->add_index(index);
+			}
 		}
 
 		m_edge->m_source->m_incident.push_back(m_edge);
@@ -238,19 +316,54 @@ template <class G> class RemoveEdge : public Operation {
 		m_graph.ensure_traits(m_edge->target());
 	}
 	void redo() override {
-		const size_t index = m_edge->graph_index();
-		const size_t last = m_graph.m_edges.size() - 1;
-		if (index != last) {
-			m_graph.m_edges[index] = m_graph.m_edges[last];
-		}
-		m_graph.m_edges.pop_back();
-
-		m_edge->m_source->remove_incident(m_edge);
-		m_edge->m_target->remove_incident(m_edge);
-
-		m_graph.ensure_traits(m_edge->m_source);
-		m_graph.ensure_traits(m_edge->m_target);
+		remove_edge(m_graph, m_edge);
 	}
 };
 
+template <class G> class ChangeCurve : public Operation {
+  private:
+	using Curve_traits = typename G::Curve_traits;
+	using Curve_representation = Curve_traits::Curve_representation;
+	using Curve = Curve_traits::Curve_2;
+
+	G& m_graph;
+	G::Edge_handle m_edge;
+	Curve_representation m_representation;
+
+  public:
+	ChangeCurve(G::Edge_handle e, Curve_representation new_representation)
+	    : m_edge(e), m_representation(new_representation) {}
+
+	~ChangeCurve() {}
+
+	void undo_internal() override {
+		std::swap(m_edge->m_representation, m_representation);
+	}
+
+	void redo_internal() override {
+		std::swap(m_edge->m_representation, m_representation);
+	}
+};
+
+template <class G> class MoveVertex : public Operation {
+  private:
+	using Point = typename G::Point_2;
+
+	G::Vertex_handle m_vertex;
+	Point m_point;
+
+	std::optional<std::function<G::CurveTraits::Curve_representation(G::Edge_const_handle)>> m_e_to_curve;
+
+  public:
+	MoveVertex(G::Vertex_handle v, Point p) : 
+		m_vertex(v), m_point(std::move(p)) {}
+	~MoveVertex() {}
+
+	void undo_internal() override {
+		std::swap(m_point, v->m_point);
+	}
+	void redo_internal() override {
+		std::swap(m_point, v->m_point);
+	}
+};
 } // namespace cartocrow
