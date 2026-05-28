@@ -2,7 +2,6 @@ set(SOURCES
 	core.cpp
 	ellipse.cpp
 	region_arrangement.cpp
-	timer.cpp
 	cubic_bezier.cpp
 	rectangle_helpers.cpp
 	vector_helpers.cpp
@@ -10,11 +9,11 @@ set(SOURCES
 	polyline.cpp
 	polyline_set.cpp
 	segment_delaunay_graph_helpers.cpp
+	stopwatch.cpp
 	polygon_set_raw.cpp
 	point_set.cpp
 )
 set(HEADERS
-	centroid.h
 	core.h
 	ellipse.h
 	boundary_map.h
@@ -22,7 +21,6 @@ set(HEADERS
 	arrangement_map.hpp
 	region_arrangement.h
 	region_map.h
-	timer.h
 	cubic_bezier.h
 	root_finding_helpers.h
 	rectangle_helpers.h
@@ -37,6 +35,8 @@ set(HEADERS
 	segment_delaunay_graph_helpers.h
 	segment_delaunay_graph_helpers_cgal_adapted.h
 	polyline_set.h
+	stopwatch.h
+	polygon_helpers.h
 	polygon_set_raw.h
 	point_set.h
 )

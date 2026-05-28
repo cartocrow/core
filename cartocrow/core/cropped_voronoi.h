@@ -1,5 +1,21 @@
-#ifndef CARTOCROW_CROPPED_VORONOI_H
-#define CARTOCROW_CROPPED_VORONOI_H
+/*
+Copyright (C) 2026  TU Eindhoven
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#pragma once
 
 #include "core.h"
 #include <list>
@@ -121,5 +137,3 @@ struct Cropped_voronoi_from_delaunay{
 	void operator<<(std::pair<const Point<Exact>&, const Line<Exact>&> site_line)  { crop_and_extract_segment(site_line.first, site_line.second); }
 	void operator<<(std::pair<const Point<Exact>&, const Segment<Exact>&> site_seg){ crop_and_extract_segment(site_seg.first, site_seg.second); }
 };
-
-#endif //CARTOCROW_CROPPED_VORONOI_H

@@ -1,5 +1,4 @@
-#ifndef CARTOCROW_GDAL_CONVERSION_H
-#define CARTOCROW_GDAL_CONVERSION_H
+#pragma once
 
 #include <ogrsf_frmts.h>
 #include "cartocrow/core/core.h"
@@ -24,5 +23,3 @@ OGRLinearRing polygonToOGRLinearRing(const Polygon<Exact>& polygon);
 OGRPolygon polygonWithHolesToOGRPolygon(const PolygonWithHoles<Exact>& polygon);
 OGRMultiPolygon polygonSetToOGRMultiPolygon(const PolygonSet<Exact>& polygonSet);
 }
-
-#endif //CARTOCROW_GDAL_CONVERSION_H
