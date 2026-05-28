@@ -13,7 +13,7 @@ class Operation {
 
 class OperationGroup {
   private:
-	std::list<std::unique_ptr<Operation>> ops;
+	std::vector<std::unique_ptr<Operation>> ops;
 
   public:
 	void add_operation(std::unique_ptr<Operation> op) {
