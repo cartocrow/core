@@ -120,6 +120,45 @@ PolygonSet<Exact> IpeReader::convertShapeToPolygonSet(const ipe::Shape& shape,
 	return set;
 }
 
+PolygonSetRaw<Inexact> IpeReader::convertShapeToPolygonSetRaw(const ipe::Shape& shape,
+															  const ipe::Matrix& matrix) {
+	PolygonSetRaw<Inexact> set;
+	for (int i = 0; i < shape.countSubPaths(); ++i) {
+		Polygon<Inexact> polygon;
+		if (shape.subPath(i)->type() != ipe::SubPath::ECurve) {
+			throw std::runtime_error("Encountered shape with a non-polygonal boundary");
+		}
+		const ipe::Curve* curve = shape.subPath(i)->asCurve();
+		for (int j = 0; j < curve->countSegments(); ++j) {
+			ipe::CurveSegment segment = curve->segment(j);
+			if (segment.type() != ipe::CurveSegment::ESegment) {
+				throw std::runtime_error("Encountered shape with a non-polygonal boundary");
+			}
+			if (j == 0) {
+				ipe::Vector v = matrix * segment.cp(0);
+				polygon.push_back(Point<Inexact>(v.x, v.y));
+			}
+			ipe::Vector v = matrix * segment.last();
+			Point<Inexact> p(v.x, v.y);
+			if (p != polygon.container().back()) {
+				polygon.push_back(Point<Inexact>(v.x, v.y));
+			}
+		}
+		// if the begin and end vertices are equal, remove one of them
+		if (polygon.container().front() == polygon.container().back()) {
+			polygon.container().pop_back();
+		}
+		if (!polygon.is_simple()) {
+			for (const auto v : polygon.vertices()) {
+				std::cout << v << std::endl;
+			}
+			throw std::runtime_error("Encountered non-simple polygon");
+		}
+		set.polygons_with_holes.emplace_back(polygon);
+	}
+	return set;
+}
+
 CubicBezierSpline IpeReader::convertPathToSpline(const ipe::SubPath& path, const ipe::Matrix& matrix) {
 	CubicBezierSpline spline;
 	if (path.type() == ipe::SubPath::EClosedSpline) {

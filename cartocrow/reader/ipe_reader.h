@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "cartocrow/core/core.h"
 #include "cartocrow/core/cubic_bezier.h"
+#include "cartocrow/core/polygon_set_raw.h"
 
 #include <ipeattributes.h>
 #include <ipedoc.h>
@@ -51,6 +52,12 @@ class IpeReader {
 	 */
 	static PolygonSet<Exact> convertShapeToPolygonSet(const ipe::Shape& shape,
 	                                                  const ipe::Matrix& matrix);
+	/// Converts an Ipe shape to a PolygonSetRaw.
+	/**
+	 * Throws if the shape contains a non-polygonal boundary.
+	 */
+	static PolygonSetRaw<Inexact> convertShapeToPolygonSetRaw(const ipe::Shape& shape,
+	                                                          const ipe::Matrix& matrix);
 	/// Converts an Ipe path to a Bézier spline.
 	static CubicBezierSpline convertPathToSpline(const ipe::SubPath& path, const ipe::Matrix& matrix);
 
