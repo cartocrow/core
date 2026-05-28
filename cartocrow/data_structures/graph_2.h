@@ -223,12 +223,30 @@ class Graph_2 {
 		Vertex_range(Vertex_container& container) : m_container(container) {}
 
 	  public:
-		Vertex_iterator begin() {
+		Vertex_iterator begin() const {
 			return m_container.begin();
 		}
 
-		Vertex_iterator end() {
+		Vertex_iterator end() const {
 			return m_container.end();
+		}
+	};
+
+	class Vertex_const_range {
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
+	  private:
+		const Vertex_container& m_container;
+
+		Vertex_const_range(const Vertex_container& container) : m_container(container) {}
+
+	  public:
+		Vertex_const_iterator begin() const {
+			return m_container.cbegin();
+		}
+
+		Vertex_const_iterator end() const {
+			return m_container.cend();
 		}
 	};
 
@@ -241,12 +259,30 @@ class Graph_2 {
 		Edge_range(Edge_container& container) : m_container(container) {}
 
 	  public:
-		Edge_iterator begin() {
+		Edge_iterator begin() const {
 			return m_container.begin();
 		}
 
-		Edge_iterator end() {
+		Edge_iterator end() const {
 			return m_container.end();
+		}
+	};
+
+	class Edge_const_range {
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
+	  private:
+		const Edge_container& m_container;
+
+		Edge_const_range(const Edge_container& container) : m_container(container) {}
+
+	  public:
+		Edge_const_iterator begin() const {
+			return m_container.cbegin();
+		}
+
+		Edge_const_iterator end() const {
+			return m_container.cend();
 		}
 	};
 
@@ -376,8 +412,11 @@ class Graph_2 {
 		return m_initialized;
 	}
 
-	Vertex_range vertices() const {
+	Vertex_range vertices() {
 		return Vertex_range(m_vertices);
+	}
+	Vertex_const_range vertices() const {
+		return Vertex_const_range(m_vertices);
 	}
 	Vertex_iterator vertices_begin() {
 		return m_vertices.begin();
@@ -386,8 +425,11 @@ class Graph_2 {
 		return m_vertices.end();
 	}
 
-	Edge_range edges() const {
+	Edge_range edges() {
 		return Edge_range(m_edges);
+	}
+	Edge_const_range edges() const {
+		return Edge_const_range(m_edges);
 	}
 	Edge_iterator edges_begin() {
 		return m_edges.begin();
