@@ -51,10 +51,16 @@ class Graph_2 {
 	using Kernel = Curve_traits::Kernel;
 	using Graph_traits = GraphTraits;
 
+	using History = std::conditional<GraphTraits::historic, History, std::monostate>::type;
+
   private:
 	Vertex_container m_vertices;
 	Edge_container m_edges;
+	History m_history;
 	bool m_initialized = false;
+
+	std::vector<Graph_map_base*> m_vertex_maps;
+	std::vector<Graph_map_base*> m_edge_maps;
 
 	inline void ensure_traits(Vertex_handle v) {
 		if constexpr (GraphTraits::oriented) {
@@ -171,25 +177,6 @@ class Graph_2 {
 		}
 		return true;
 	}
-
-	using HistoryContainer =
-	    std::conditional<GraphTraits::historic, std::vector<OperationGroup>, std::monostate>::type;
-
-	HistoryContainer m_history;
-	size_t m_time =
-	    0; // all indices < m_time in m_history are the past, all indices >= m_time in m_history are the future
-	int m_hist_build = 0;
-
-	inline void add_operation_to_group(std::unique_ptr<Operation> op) requires GraphTraits::historic {
-		if (m_hist_build == 0) {
-			m_history.emplace_back();
-			++m_time;
-		}
-		m_history.back().add_operation(std::move(op));
-	}
-
-	std::vector<Graph_map_base*> m_vertex_maps;
-	std::vector<Graph_map_base*> m_edge_maps;
 
 	void add_vertex_map(Graph_map_base* map) {
 		m_vertex_maps.push_back(map);
@@ -486,7 +473,7 @@ class Graph_2 {
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				add_operation_to_group(std::make_unique<AddVertex<Graph_2>>(*this, v));
+				m_history.add_operation(std::make_unique<AddVertex<Graph_2>>(*this, v));
 			}
 		}
 
@@ -495,7 +482,7 @@ class Graph_2 {
 	void remove_vertex(Vertex_handle v) {
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				start_operation_group();
+				m_history.start_group();
 			}
 		}
 
@@ -520,8 +507,8 @@ class Graph_2 {
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				add_operation_to_group(std::make_unique<RemoveVertex<Graph_2>>(*this, v));
-				end_operation_group();
+				m_history.add_operation(std::make_unique<RemoveVertex<Graph_2>>(*this, v));
+				m_history.end_group();
 			} else {
 				delete v;
 			}
@@ -555,7 +542,7 @@ class Graph_2 {
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				add_operation_to_group(std::make_unique<AddEdge<Graph_2>>(*this, e));
+				m_history.add_operation(std::make_unique<AddEdge<Graph_2>>(*this, e));
 			}
 		}
 
@@ -588,8 +575,7 @@ class Graph_2 {
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				add_operation_to_group(std::make_unique<RemoveEdge<Graph_2>>(*this, e));
-				end_operation_group();
+				m_history.add_operation(std::make_unique<RemoveEdge<Graph_2>>(*this, e));
 			} else {
 				delete e;
 			}
@@ -598,57 +584,10 @@ class Graph_2 {
 		}
 	}
 
-	void start_operation_group() requires GraphTraits::historic {
-		assert(m_time == m_history.size() - 1);
-		if (m_hist_build == 0) {
-			m_history.emplace_back();
-			m_time++;
-		}
-		m_hist_build++;
-	}
-	void end_operation_group() requires GraphTraits::historic {
-		assert(m_hist_build > 0);
-		m_hist_build--;
+	History& history() requires GraphTraits::historic {
+		return m_history;
 	}
 
-	bool can_undo() const requires GraphTraits::historic {
-		return m_time > 0;
-	}
-	void undo() requires GraphTraits::historic {
-		m_time--;
-		m_history[m_time].undo();
-	}
-	void undo_all() requires GraphTraits::historic {
-		while (m_time > 0) {
-			undo();
-		}
-	}
-	bool can_redo() const requires GraphTraits::historic {
-		return m_time < m_history.size();
-	}
-	void redo() requires GraphTraits::historic {
-		m_history[m_time].redo();
-		m_time++;
-	}
-	void redo_all() requires GraphTraits::historic {
-		while (m_time < m_history.size()) {
-			redo();
-		}
-	}
-	void forget_past() requires GraphTraits::historic {
-		for (size_t i = m_time; i < m_history.size(); ++i) {
-			m_history[i - m_time] = m_history[i];
-		}
-		while (m_time > 0) {
-			m_history.pop_back();
-			m_time--;
-		}
-	}
-	void forget_future() requires GraphTraits::historic {
-		while (m_time < m_history.size()) {
-			m_history.pop_back();
-		}
-	}
 	Edge_handle
 	split_vertex(Vertex_handle v, Point_2 p0,
 	             Point_2 p1) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
@@ -666,7 +605,7 @@ class Graph_2 {
 		assert(c1.target() == c2.source());
 
 		if constexpr (GraphTraits::historic) {
-			start_operation_group();
+			m_history.start_group();
 		}
 
 		auto e0 = v->incoming();
@@ -683,7 +622,7 @@ class Graph_2 {
 		add_edge(v2, v3, c2);
 
 		if constexpr (GraphTraits::historic) {
-			end_operation_group();
+			m_history.end_group();
 		}
 
 		return eh;
@@ -710,7 +649,7 @@ class Graph_2 {
 		Vertex_handle nextTarget = next->target();
 
 		if constexpr (GraphTraits::historic) {
-			start_operation_group();
+			m_history.start_group();
 		}
 
 		// todo: reuse edge/vertex objects and move them
@@ -729,7 +668,7 @@ class Graph_2 {
 		auto eh2 = add_edge(v, nextTarget, fromNewPoint);
 
 		if constexpr (GraphTraits::historic) {
-			end_operation_group();
+			m_history.end_group();
 		}
 
 		return v;
@@ -753,7 +692,7 @@ class Graph_2 {
 
 		// todo: reuse edge/vertex objects and move them
 		if constexpr (GraphTraits::historic) {
-			start_operation_group();
+			m_history.start_group();
 		}
 
 		// Remove old edges and vertices
@@ -765,7 +704,7 @@ class Graph_2 {
 		auto eh = add_edge(u, v, newCurve);
 
 		if constexpr (GraphTraits::historic) {
-			end_operation_group();
+			m_history.end_group();
 		}
 
 		return eh;
@@ -785,7 +724,7 @@ class Graph_2 {
 		assert(toNewPoint.target() == fromNewPoint.source());
 
 		if constexpr (GraphTraits::historic) {
-			start_operation_group();
+			m_history.start_group();
 		}
 
 		auto s = e->source();
@@ -796,7 +735,7 @@ class Graph_2 {
 		add_edge(vh, t, fromNewPoint);
 
 		if constexpr (GraphTraits::historic) {
-			end_operation_group();
+			m_history.end_group();
 		}
 
 		return vh;

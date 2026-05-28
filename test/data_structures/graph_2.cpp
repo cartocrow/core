@@ -140,46 +140,47 @@ TEST_CASE("Graph history") {
 	V v = g.add_vertex(P(0, 0));
 	V w = g.add_vertex(P(0, 0));
 
+	auto& h = g.history();
 
 	CHECK(g.number_of_vertices() == 3);
-	CHECK(g.can_undo());
-	CHECK(!g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(!h.can_redo());
 
-	g.undo();
+	h.undo();
 
 	CHECK(g.number_of_vertices() == 2);
-	CHECK(g.can_undo());
-	CHECK(g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(h.can_redo());
 
-	g.undo();
+	h.undo();
 
 	CHECK(g.number_of_vertices() == 1);
-	CHECK(g.can_undo());
-	CHECK(g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(h.can_redo());
 
-	g.undo();
+	h.undo();
 
 	CHECK(g.number_of_vertices() == 0);
-	CHECK(!g.can_undo());
-	CHECK(g.can_redo());
+	CHECK(!h.can_undo());
+	CHECK(h.can_redo());
 	
-	g.redo();
+	h.redo();
 
 	CHECK(g.number_of_vertices() == 1);
-	CHECK(g.can_undo());
-	CHECK(g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(h.can_redo());
 
-	g.redo();
+	h.redo();
 	
 	CHECK(g.number_of_vertices() == 2);
-	CHECK(g.can_undo());
-	CHECK(g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(h.can_redo());
 
-	g.redo();
+	h.redo();
 
 	CHECK(g.number_of_vertices() == 3);
-	CHECK(g.can_undo());
-	CHECK(!g.can_redo());
+	CHECK(h.can_undo());
+	CHECK(!h.can_redo());
 }
 
 TEST_CASE("Graph operations") {
