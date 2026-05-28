@@ -522,8 +522,7 @@ class Graph_2 {
 	}
 
 	Edge_handle add_edge(Vertex_handle source, Vertex_handle target, const Curve_2& curve) {
-		Edge_handle e = new Edge(source, target, curve);
-		const int index = e->m_index = m_edges.size();
+		Edge_handle e = new Edge(source, target, m_edges.size(), curve);
 		m_edges.push_back(e);
 
 		std::vector<Edge_handle>& source_inc = source->m_incident;
@@ -886,32 +885,32 @@ class Graph_2_edge {
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
 	using Curve_traits = CurveTraits;
+	using CurveRepresentation = CurveTraits::CurveRepresentation_2;
 
   private:
 	Vertex_handle m_source;
 	Vertex_handle m_target;
-	Curve_2 m_curve;
-	EdgeData m_data;
+	CurveRepresentation m_representation;
 	size_t m_index;
+	Edge_data m_data;
 
-	Graph_2_edge(Vertex_handle source, Vertex_handle target, const Curve_2 curve)
-	    : m_source(std::move(source)), m_target(std::move(target)), m_curve(std::move(curve)) {
-		assert(m_curve.source() == m_source->m_point);
-		assert(m_curve.target() == m_target->m_point);
-	}
+	Graph_2_edge(Vertex_handle source, Vertex_handle target,
+	             const size_t index) requires std::same_as<CurveRepresentation, std::monostate>
+	    : m_source(std::move(source)), m_target(std::move(target)), m_index(std::move(index)) {}
 
-	Graph_2_edge(Vertex_handle source, Vertex_handle target, const Curve_2 curve, const Edge_data d)
-	    : m_source(std::move(source)), m_target(std::move(target)), m_curve(std::move(curve)),
-	      m_data(std::move(d)) {
-		assert(m_curve.source() == m_source->m_point);
-		assert(m_curve.target() == m_target->m_point);
-	}
+	Graph_2_edge(Vertex_handle source, Vertex_handle target, const size_t index, const Curve_2 curve)
+	    : m_source(std::move(source)), m_target(std::move(target)), m_index(std::move(index)),
+	      m_representation(CurveTraits::representation(curve)) {}
+
+	Graph_2_edge(Vertex_handle source, Vertex_handle target, const size_t index,
+	             const CurveRepresentation rep)
+	    : m_source(std::move(source)), m_target(std::move(target)), m_index(std::move(index)),
+	      m_representation(std::move(rep)) {}
 
   public:
 	size_t graph_index() const {
 		return m_index;
 	}
-
 	Vertex_handle source() {
 		return m_source;
 	}
@@ -932,15 +931,21 @@ class Graph_2_edge {
 		assert(v == m_source || v == m_target);
 		return v == m_source ? m_target : m_source;
 	}
+	CurveRepresentation& representation() {
+		return m_representation;
+	}
+	const CurveRepresentation& representation() const {
+		return m_representation;
+	}
 	Curve_2& curve() {
-		return m_curve;
+		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
 	}
 	const Curve_2& curve() const {
-		return m_curve;
+		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
 	}
 	void reverse() {
 		std::swap(m_source, m_target);
-		m_curve = Curve_traits::reversed(m_curve);
+		CurveTraits::reverse_representation(m_source->m_point, m_target->m_point, m_representation);
 	}
 	Edge_handle prev() {
 		return m_source->incoming();
@@ -953,12 +958,6 @@ class Graph_2_edge {
 	}
 	Edge_const_handle next() const {
 		return m_target->outgoing();
-	}
-	Edge_data& data() {
-		return m_data;
-	}
-	const Edge_data& data() const {
-		return m_data;
 	}
 };
 
