@@ -484,7 +484,7 @@ class Graph_2 {
 		}
 
 		while (!v->m_incident.empty()) {
-			g.remove_edge(v->m_incident.back());
+			remove_edge(v->m_incident.back());
 		}
 		RemoveVertex<Graph_2>::remove_vertex(*this, v);
 
@@ -546,7 +546,7 @@ class Graph_2 {
 	}
 
 	void move_vertex(Vertex_handle v, Point_2 p,
-					 std::optional<std::function<G::CurveTraits::Curve_representation(G::Edge_const_handle)>> e_to_rep = std::nullopt) {
+					 std::optional<std::function<typename CurveTraits::Curve_representation_2(Edge_const_handle)>> e_to_rep = std::nullopt) {
 		for (auto eh : v->incident_edges()) {
 			if (e_to_rep.has_value()) {
 				change_curve(eh, (*e_to_rep)(eh));
@@ -750,6 +750,8 @@ class Graph_2_vertex {
 
 	template <class G> friend class AddEdge;
 	template <class G> friend class RemoveEdge;
+	template <class G> friend class AddVertex;
+	template <class G> friend class RemoveVertex;
 
   public:
 	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
@@ -851,14 +853,14 @@ class Graph_2_vertex {
 	  private:
 		Edge_container& m_container;
 
-		Edge_range(Edge_container& container) : m_container(container) {}
+		Incident_edges_range(Edge_container& container) : m_container(container) {}
 
 	  public:
-		Edge_iterator begin() const {
+		Edge_container::iterator begin() const {
 			return m_container.begin();
 		}
 
-		Edge_iterator end() const {
+		Edge_container::iterator end() const {
 			return m_container.end();
 		}
 	};
@@ -869,14 +871,14 @@ class Graph_2_vertex {
 	  private:
 		const Edge_container& m_container;
 
-		Edge_const_range(const Edge_container& container) : m_container(container) {}
+		Incident_edges_const_range(const Edge_container& container) : m_container(container) {}
 
 	  public:
-		Edge_const_iterator begin() const {
+		Edge_container::const_iterator begin() const {
 			return m_container.cbegin();
 		}
 
-		Edge_const_iterator end() const {
+		Edge_container::const_iterator end() const {
 			return m_container.cend();
 		}
 	};

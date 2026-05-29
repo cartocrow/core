@@ -2,6 +2,7 @@
 
 #include "graph_traits_2.h"
 #include "graph_curve_traits_2.h"
+#include "graph_operation_2.h"
 
 namespace cartocrow {
 
@@ -9,6 +10,15 @@ class Graph_map_base {
 
 	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 	friend class Graph_2;
+
+	template <class G>
+	friend class AddVertex;
+	template <class G>
+	friend class RemoveVertex;
+	template <class G>
+	friend class AddEdge;
+	template <class G>
+	friend class RemoveEdge;
 
   protected:
 	void clear() {

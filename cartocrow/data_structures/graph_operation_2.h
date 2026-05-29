@@ -1,6 +1,7 @@
 #pragma once
 
 namespace cartocrow {
+class Graph_map_base;
 
 class Operation {
 
@@ -141,8 +142,8 @@ template <class G> class AddVertex : public Operation {
 	
 	static void add_vertex(G& g, typename G::Vertex_handle v) {
 		const int index = v->m_index = g.m_vertices.size();
-		m_vertices.push_back(v);
-		for (Graph_map_base* m : m_vertex_maps) {
+		g.m_vertices.push_back(v);
+		for (Graph_map_base* m : g.m_vertex_maps) {
 			m->add_index();
 		}
 	}
@@ -224,8 +225,8 @@ template <class G> class AddEdge : public Operation {
 	static void add_edge(G& graph, G::Edge_handle e) {
 		graph.m_edges.push_back(e);
 
-		std::vector<Edge_handle>& source_inc = e->m_source->m_incident;
-		std::vector<Edge_handle>& target_inc = e->m_target->m_incident;
+		std::vector<G::Edge_handle>& source_inc = e->m_source->m_incident;
+		std::vector<G::Edge_handle>& target_inc = e->m_target->m_incident;
 
 		source_inc.push_back(e);
 		target_inc.push_back(e);
@@ -234,7 +235,7 @@ template <class G> class AddEdge : public Operation {
 		graph.ensure_traits(e->m_source);
 		graph.ensure_traits(e->m_target);
 
-		for (Graph_map_base* m : m_edge_maps) {
+		for (Graph_map_base* m : graph.m_edge_maps) {
 			m->add_index();
 		}
 	}
@@ -248,7 +249,7 @@ template <class G> class AddEdge : public Operation {
 		m_graph.ensure_traits(m_edge->m_source);
 		m_graph.ensure_traits(m_edge->m_target);
 
-		for (Graph_map_base* m : m_edge_maps) {
+		for (Graph_map_base* m : m_graph.m_edge_maps) {
 			m->remove_last_index();
 		}
 	}
@@ -298,13 +299,13 @@ template <class G> class RemoveEdge : public Operation {
 		const size_t index = m_edge->graph_index();
 		if (index == m_graph.m_edges.size()) {
 			m_graph.m_edges.push_back(m_edge);
-			for (Graph_map_base* m : g.m_edge_maps) {
+			for (Graph_map_base* m : m_graph.m_edge_maps) {
 				m->add_index();
 			}
 		} else {
 			m_graph.m_edges.push_back(m_graph.m_edges[index]);
 			m_graph.m_edges[index] = m_edge;
-			for (Graph_map_base* m : g.m_edge_maps) {
+			for (Graph_map_base* m : m_graph.m_edge_maps) {
 				m->add_index(index);
 			}
 		}
@@ -352,18 +353,16 @@ template <class G> class MoveVertex : public Operation {
 	G::Vertex_handle m_vertex;
 	Point m_point;
 
-	std::optional<std::function<G::CurveTraits::Curve_representation(G::Edge_const_handle)>> m_e_to_curve;
-
   public:
 	MoveVertex(G::Vertex_handle v, Point p) : 
 		m_vertex(v), m_point(std::move(p)) {}
 	~MoveVertex() {}
 
 	void undo_internal() override {
-		std::swap(m_point, v->m_point);
+		std::swap(m_point, m_vertex->m_point);
 	}
 	void redo_internal() override {
-		std::swap(m_point, v->m_point);
+		std::swap(m_point, m_vertex->m_point);
 	}
 };
 } // namespace cartocrow
