@@ -19,14 +19,14 @@ namespace cartocrow::data_structures {
 			Node* rt;
 			Node* rb;
 			const Rect rect;
-			std::vector<Element*>* elts;
+			std::vector<Element>* elts;
 
 			PQTNode(Node* p, Rect r, const bool is_leaf) : parent(p), rect(r) {
 				lt = nullptr;
 				lb = nullptr;
 				rt = nullptr;
 				rb = nullptr;
-				elts = is_leaf ? new std::vector<Element*>() : nullptr;
+				elts = is_leaf ? new std::vector<Element>() : nullptr;
 			}
 
 			~PQTNode() {
@@ -57,14 +57,14 @@ namespace cartocrow::data_structures {
 			findContainedRecursive(n->rt, query, act);
 		}
 		else if (encloses(query, n->rect)) {
-			for (Element* elt : *(n->elts)) {
-				act(*elt);
+			for (Element elt : *(n->elts)) {
+				act(elt);
 			}
 		}
 		else {
-			for (Element* elt : *(n->elts)) {
-				if (contains(query, PQT::get_point(*elt), 0)) {
-					act(*elt);
+			for (Element elt : *(n->elts)) {
+				if (contains(query, PQT::get_point(elt), 0)) {
+					act(elt);
 				}
 			}
 		}
@@ -72,7 +72,7 @@ namespace cartocrow::data_structures {
 
 	template <PointQuadTreeTraits PQT>
 	template<bool extend>
-	detail::PQTNode<PQT>* PointQuadTree<PQT>::find(Element& elt) {
+	detail::PQTNode<PQT>* PointQuadTree<PQT>::find(Element elt) {
 		int d = 0;
 		Node* n = root;
 		Point<Kernel>& pt = PQT::get_point(elt);
@@ -175,13 +175,13 @@ namespace cartocrow::data_structures {
 	}
 
 	template <PointQuadTreeTraits PQT>
-	void PointQuadTree<PQT>::insert(Element& elt) {
+	void PointQuadTree<PQT>::insert(Element elt) {
 		Node* n = find<true>(elt);
-		n->elts->push_back(&elt);
+		n->elts->push_back(elt);
 	}
 
 	template <PointQuadTreeTraits PQT>
-	bool PointQuadTree<PQT>::remove(Element& elt) {
+	bool PointQuadTree<PQT>::remove(Element elt) {
 		Node* n = find<false>(elt);
 
 		if (n == nullptr) {
@@ -189,7 +189,7 @@ namespace cartocrow::data_structures {
 			return false;
 		}
 
-		auto position = std::find(n->elts->begin(), n->elts->end(), &elt);
+		auto position = std::find(n->elts->begin(), n->elts->end(), elt);
 		if (position == n->elts->end()) {
 			// the node doesn't actually contain the element
 			return false;
@@ -229,14 +229,14 @@ namespace cartocrow::data_structures {
 	}
 
 	template <PointQuadTreeTraits PQT>
-	PQT::Element* PointQuadTree<PQT>::findElementRecursive(Node* n, const  Point<Kernel>& query, const Number<Kernel> prec) {
+	PQT::Element PointQuadTree<PQT>::findElementRecursive(Node* n, const  Point<Kernel>& query, const Number<Kernel> prec) {
 		if (n == nullptr || !contains(n->rect, query, prec)) {
 			// outside of the node's rectangle
 			return nullptr;
 		}
 		else if (n->elts == nullptr) {
 			// internal node
-			Element* elt = findElementRecursive(n->lb, query, prec);
+			Element elt = findElementRecursive(n->lb, query, prec);
 			if (elt != nullptr) {
 				return elt;
 			}
@@ -253,8 +253,8 @@ namespace cartocrow::data_structures {
 		}
 		else {
 			// leaf node
-			for (Element* elt : *(n->elts)) {
-				if (same_point(query, PQT::get_point(*elt), prec)) {
+			for (Element elt : *(n->elts)) {
+				if (same_point(query, PQT::get_point(elt), prec)) {
 					return elt;
 				}
 			}
@@ -263,7 +263,7 @@ namespace cartocrow::data_structures {
 	}
 
 	template <PointQuadTreeTraits PQT>
-	PQT::Element* PointQuadTree<PQT>::findElement(const Point<Kernel>& query, const  Number<Kernel> prec) {
+	PQT::Element PointQuadTree<PQT>::findElement(const Point<Kernel>& query, const  Number<Kernel> prec) {
 		return findElementRecursive(root, query, prec);
 	}
 
