@@ -9,20 +9,20 @@ template <class CST>
 concept GraphCurveTraits_2 =
     requires(const typename CST::Point_2& const_start, const typename CST::Point_2& const_new_start,
              const typename CST::Point_2& const_end, const typename CST::Point_2& const_new_end,
-             typename CST::CurveRepresentation_2& rep,
-             const typename CST::CurveRepresentation_2& const_rep,
+             typename CST::Curve_representation_2& rep,
+             const typename CST::Curve_representation_2& const_rep,
              const typename CST::Curve_2& const_curve,
              const CGAL::Aff_transformation_2<typename CST::Kernel>& const_trans) {
 
 	// the type stored with an edge
-	typename CST::CurveRepresentation_2;
+	typename CST::Curve_representation_2;
 	// the actual geometry (may or may not be the same as the representation)
 	typename CST::Curve_2;
 	typename CST::Point_2;
 	typename CST::Kernel;
 
 	// converts the curve into the representation
-	{CST::representation(const_curve)}->std::same_as<typename CST::CurveRepresentation_2>;
+	{CST::representation(const_curve)}->std::same_as<typename CST::Curve_representation_2>;
 	// converts the representation into the curve
 	{CST::curve(const_start, const_end, const_rep)}->std::same_as<typename CST::Curve_2>;
 	// converts the representation into the curve, but for the reversed direction

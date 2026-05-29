@@ -2,6 +2,7 @@
 
 #include "graph_traits_2.h"
 #include "graph_curve_traits_2.h"
+#include "graph_operation_2.h"
 
 namespace cartocrow {
 
@@ -10,6 +11,15 @@ class Graph_map_base {
 	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 	friend class Graph_2;
 
+	template <class G>
+	friend class AddVertex;
+	template <class G>
+	friend class RemoveVertex;
+	template <class G>
+	friend class AddEdge;
+	template <class G>
+	friend class RemoveEdge;
+
   protected:
 	void clear() {
 		resize(0);
@@ -17,6 +27,7 @@ class Graph_map_base {
 
 	virtual void resize(const size_t size) = 0;
 	virtual void add_index() = 0;
+	virtual void add_index(const size_t index) = 0;
 	virtual void remove_index(const size_t index) = 0;
 	virtual void remove_last_index() = 0;
 };
@@ -35,6 +46,11 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 
 	void add_index() override {
 		m_vec.push_back(m_init);
+	}
+
+	void add_index(const size_t index) override {
+		m_vec.push_back(m_vec[index]);
+		m_vec[index] = m_init;
 	}
 
 	void remove_index(const size_t index) override {
