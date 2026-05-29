@@ -24,7 +24,8 @@ class Graph_2 {
 	template <class G> friend class AddEdge;
 	template <class G> friend class RemoveEdge;
 
-  public:
+  public:	
+
 	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex_handle = Vertex*;
 	using Vertex_const_handle = const Vertex*;
@@ -32,6 +33,18 @@ class Graph_2 {
 	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Edge_handle = Edge*;
 	using Edge_const_handle = const Edge*;
+
+	using Vertex_data = VertexData;
+	using Edge_data = EdgeData;
+
+	using Curve_traits = CurveTraits;
+	using Kernel = CurveTraits::Kernel;
+	using Point_2 = CurveTraits::Point_2;
+	using Curve_2 = CurveTraits::Curve_2;
+	using CurveRepresentation = CurveTraits::CurveRepresentation_2;
+	
+	using Graph_traits = GraphTraits;
+	using History = std::conditional<GraphTraits::historic, History, std::monostate>::type;
 
   private:
 	using Vertex_container = std::vector<Vertex_handle>;
@@ -42,16 +55,6 @@ class Graph_2 {
 	using Vertex_const_iterator = Vertex_container::const_iterator;
 	using Edge_iterator = Edge_container::iterator;
 	using Edge_const_iterator = Edge_container::const_iterator;
-
-	using Point_2 = CurveTraits::Point_2;
-	using Curve_2 = CurveTraits::Curve_2;
-	using Vertex_data = VertexData;
-	using Edge_data = EdgeData;
-	using Curve_traits = CurveTraits;
-	using Kernel = Curve_traits::Kernel;
-	using Graph_traits = GraphTraits;
-
-	using History = std::conditional<GraphTraits::historic, History, std::monostate>::type;
 
   private:
 	Vertex_container m_vertices;
@@ -756,6 +759,37 @@ class Graph_2 {
 		}
 		return box;
 	}
+
+	CGAL::Iso_rectangle_2<Kernel> bounding_rectangle() const {
+		
+		typename Kernel::FT left = 0, right = 0, bottom = 0, top = 0;
+
+		bool first = true;
+		for (Vertex_handle v : m_vertices) {
+			const Point<Kernel> pt = v->m_point;
+
+			if (first) {
+				left = right = pt.x();
+				top = bottom = pt.y();
+				first = false;
+			} else {
+				if (pt.x() < left) {
+					left = pt.x();
+				} else if (pt.x() > right) {
+					right = pt.x();
+				}
+
+				if (pt.y() < bottom) {
+					bottom = pt.y();
+				} else if (pt.y() > top) {
+					top = pt.y();
+				}
+			}
+		}
+		//  TODO: include edges
+
+		return CGAL::Iso_rectangle_2<Kernel>(left, bottom, right, top);
+	}
 };
 
 template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
@@ -767,17 +801,22 @@ class Graph_2_vertex {
 	template <class G> friend class RemoveEdge;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
+	using Edge = Graph::Edge;	
 	using Edge_handle = Graph::Edge_handle;
 	using Edge_const_handle = Graph::Edge_const_handle;
-	using Point_2 = CurveTraits::Point_2;
+	
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
+
 	using Curve_traits = CurveTraits;
+	using Kernel = CurveTraits::Kernel;
+	using Point_2 = CurveTraits::Point_2;
+	using Curve_2 = CurveTraits::Curve_2;
+	using CurveRepresentation = CurveTraits::CurveRepresentation_2;
 
   private:
 	using Edge_container = std::vector<Edge_handle>;
@@ -815,6 +854,14 @@ class Graph_2_vertex {
 	}
 	Vertex_const_handle neighbor(int i) const {
 		return m_incident[i]->other(this);
+	}
+	bool is_neighbor_of(Vertex_const_handle v) const {
+		for (int i = degree() - 1; i >= 0; --i) {
+			if (neighbor(i) == v) {
+				return true;
+			}
+		}
+		return false;
 	}
 	Edge_handle incoming() requires GraphTraits::oriented {
 		assert(degree() == 2);
@@ -873,18 +920,21 @@ class Graph_2_edge {
 	template <class G> friend class RemoveEdge;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
+	using Edge = Graph::Edge;	
 	using Edge_handle = Graph::Edge_handle;
 	using Edge_const_handle = Graph::Edge_const_handle;
-	using Point_2 = CurveTraits::Point_2;
-	using Curve_2 = CurveTraits::Curve_2;
+	
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
+
 	using Curve_traits = CurveTraits;
+	using Kernel = CurveTraits::Kernel;
+	using Point_2 = CurveTraits::Point_2;
+	using Curve_2 = CurveTraits::Curve_2;
 	using CurveRepresentation = CurveTraits::CurveRepresentation_2;
 
   private:
@@ -937,26 +987,26 @@ class Graph_2_edge {
 	const CurveRepresentation& representation() const {
 		return m_representation;
 	}
-	Curve_2& curve() {
+	Curve_2 curve() {
 		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
 	}
-	const Curve_2& curve() const {
+	const Curve_2 curve() const {
 		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
 	}
 	void reverse() {
 		std::swap(m_source, m_target);
 		CurveTraits::reverse_representation(m_source->m_point, m_target->m_point, m_representation);
 	}
-	Edge_handle prev() {
+	Edge_handle prev() requires GraphTraits::oriented {
 		return m_source->incoming();
 	}
-	Edge_const_handle prev() const {
+	Edge_const_handle prev() const requires GraphTraits::oriented {
 		return m_source->incoming();
 	}
-	Edge_handle next() {
+	Edge_handle next() requires GraphTraits::oriented {
 		return m_target->outgoing();
 	}
-	Edge_const_handle next() const {
+	Edge_const_handle next() const requires GraphTraits::oriented {
 		return m_target->outgoing();
 	}
 };
