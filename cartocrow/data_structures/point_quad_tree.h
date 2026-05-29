@@ -9,7 +9,7 @@ template <typename PQT> concept PointQuadTreeTraits = requires(typename PQT::Ele
 	typename PQT::Element;
 	typename PQT::Kernel;
 
-	{PQT::get_point(elt)}->std::convertible_to<Point<typename PQT::Kernel>&>;
+	{PQT::get_point(elt)}->std::convertible_to<const Point<typename PQT::Kernel>&>;
 };
 
 namespace detail {
