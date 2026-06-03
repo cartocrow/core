@@ -93,8 +93,14 @@ class Graph_2 {
 		Edge_handle bwd = v->m_incident[0];
 		Edge_handle fwd = v->m_incident[1];
 
-		if (bwd->m_target == v && fwd->m_source == v)
+		if (bwd->m_target == v && fwd->m_source == v) {
 			return; // already satisfies orientation
+		}
+
+		if (fwd->m_target == v && bwd->m_source == v) {
+			std::swap(v->m_incident[0], v->m_incident[1]);
+			return;
+		}
 
 		if (bwd->m_target != v) {
 			bwd->reverse();
@@ -312,8 +318,8 @@ class Graph_2 {
 			Vertex_handle new_source = vmap[eit->m_source];
 			Vertex_handle new_target = vmap[eit->m_target];
 
-			Edge_handle new_e = new Edge(new_source, new_target, eit->m_representation, eit->m_data);
-			new_e->m_index = eit->m_index;
+			Edge_handle new_e =
+			    new Edge(new_source, new_target, eit->m_index, eit->m_representation, eit->m_data);
 			m_edges[eit->m_index] = new_e;
 
 			emap[eit] = new_e;
@@ -452,18 +458,22 @@ class Graph_2 {
 		for (Vertex_handle v : m_vertices) {
 			delete v;
 		}
+		m_vertices.clear();
 		for (Edge_handle e : m_edges) {
 			delete e;
 		}
+		m_edges.clear();
 		if constexpr (GraphTraits::historic) {
 			m_history.clear();
 		}
 		for (Graph_map_base* m : m_vertex_maps) {
 			m->clear();
 		}
+		m_vertex_maps.clear();
 		for (Graph_map_base* m : m_edge_maps) {
 			m->clear();
 		}
+		m_edge_maps.clear();
 	}
 
 	Vertex_handle add_vertex(Point_2 p) {
@@ -553,9 +563,12 @@ class Graph_2 {
 			if (e_to_rep.has_value()) {
 				change_curve(eh, (*e_to_rep)(eh));
 			} else {
-				auto new_representation = eh->source() == v
-				    ? Curve_traits::move_start(p, eh->target()->point(), eh->representation())
-				    : Curve_traits::move_end(eh->source()->point(), p, eh->representation());
+				auto new_representation = eh->m_representation;
+				if (eh->source() == v) {
+					Curve_traits::move_start(p, eh->target()->point(), new_representation);
+				} else {
+					Curve_traits::move_end(eh->source()->point(), p, new_representation);
+				}
 				change_curve(eh, std::move(new_representation));
 			}
 		}
@@ -732,13 +745,13 @@ class Graph_2 {
 		}
 		std::vector<Point<Inexact>> points;
 		for (Vertex_handle v : m_vertices) {
-			points.push_back(v.point());
+			points.push_back(v->point());
 		}
 		auto box = CGAL::bbox_2(points.begin(), points.end());
 		if constexpr (!std::same_as<Curve_2, Segment<Kernel>>) {
 			for (const auto& e : m_edges) {
 				box = box + Curve_traits::bbox(e->source()->point(), e->target()->point(),
-				                               e.representation());
+				                               e->representation());
 			}
 		}
 		return box;
@@ -984,6 +997,11 @@ class Graph_2_edge {
 	    : m_source(std::move(source)), m_target(std::move(target)), m_index(std::move(index)),
 	      m_representation(std::move(rep)) {}
 
+	Graph_2_edge(Vertex_handle source, Vertex_handle target, const size_t index,
+	             const Curve_representation rep, Edge_data data)
+	    : m_source(std::move(source)), m_target(std::move(target)), m_index(std::move(index)),
+	      m_representation(std::move(rep)), m_data(std::move(data)) {}
+
   public:
 	size_t graph_index() const {
 		return m_index;
@@ -1011,10 +1029,7 @@ class Graph_2_edge {
 	const Curve_representation& representation() const {
 		return m_representation;
 	}
-	Curve_2 curve() {
-		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
-	}
-	const Curve_2 curve() const {
+	Curve_2 curve() const {
 		return CurveTraits::curve(m_source->m_point, m_target->m_point, m_representation);
 	}
 	void reverse() {
@@ -1032,6 +1047,12 @@ class Graph_2_edge {
 	}
 	Edge_const_handle next() const requires GraphTraits::oriented {
 		return m_target->outgoing();
+	}
+	Edge_data& data() {
+		return m_data;
+	}
+	const Edge_data& data() const {
+		return m_data;
 	}
 };
 

@@ -70,6 +70,10 @@ template <class G, class E, typename T> class Graph_map : public Graph_map_base 
 	T& operator[](const E elt) {
 		return m_vec[elt->graph_index()];
 	}
+
+	void assign(const T v) {
+		m_vec.assign(m_vec.size(), v);
+	}
 };
 
 template <class G, typename T>
