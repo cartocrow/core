@@ -255,7 +255,7 @@ class CubicBezierCurve {
 			auto v = ray.to_vector();
 			// Parameter on ray
 			auto s = (point - ray.source()) * v / v.squared_length();
-			if (s >= 0 && s <= 1) {
+			if (s >= 0) {
 				*out++ = CurvePoint{t, point};
 			}
 		}
@@ -679,5 +679,7 @@ class CubicBezierSpline {
 		detail::intersectionsRecursive(*this, other, out, 0, 1, 0, 1, threshold);
 	}
 	bool selfIntersects(double threshold = M_EPSILON) const;
+
+	CGAL::Bounded_side boundedSide(const Point<Inexact>& p) const;
 };
 }

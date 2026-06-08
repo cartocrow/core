@@ -257,7 +257,21 @@ BezierDemo::BezierDemo() {
 	    renderer.draw(*d3);
 	}, "Bézier curve intersection");
 
+	m_renderer->addPainting([this](GeometryRenderer& renderer) { 
+		CubicBezierSpline s;
+		s.appendCurve({4, 2}, {4, 2.5}, {4.5, 3}, {5, 3});
+		s.appendCurve({5, 3}, {5.5, 3}, {6, 2.5}, {6, 2});
+		s.appendCurve({6, 2}, {6, 1.5}, {5.5, 1}, {5, 1});
+		s.appendCurve({5, 1}, {4.5, 1}, {4, 1.5}, {4, 2});
 
+		auto mp = m_renderer->mousePosition();
+		auto color = s.boundedSide(mp) == CGAL::ON_BOUNDED_SIDE ? Color(255, 0, 255).shaded(1.5)
+		                                                        : Color(200, 200, 200);
+		renderer.setMode(GeometryRenderer::fill | GeometryRenderer::stroke);
+		renderer.setFill(color);
+		renderer.setStroke(Color(0, 0, 0), 3.0);
+		renderer.draw(s);
+	}, "Bounded side");
 }
 
 int main(int argc, char* argv[]) {

@@ -701,4 +701,17 @@ bool CubicBezierSpline::selfIntersects(double threshold) const {
 
 	return false;
 }
+
+// Note that the current implementation is not robust.
+CGAL::Bounded_side CubicBezierSpline::boundedSide(const Point<Inexact>& p) const {
+	Ray<Inexact> r(p, Vector<Inexact>(1, 0));
+
+	std::vector<SplinePoint> inters;
+	intersections(r, std::back_inserter(inters));
+	if (inters.size() % 2 == 0) {
+		return CGAL::ON_UNBOUNDED_SIDE;
+	} else {
+		return CGAL::ON_BOUNDED_SIDE;
+	}
+}
 }
