@@ -121,9 +121,16 @@ class History {
 		}
 	}
 	void forget_future() {
-		while (m_curr != m_groups.end()) {
-			m_groups.front().forget_future();
-			m_groups.pop_back();
+		if (m_curr != m_groups.end()) {
+			while (true) {
+				bool deleting_curr = m_curr == (--m_groups.end());
+				m_groups.back().forget_future();
+				m_groups.pop_back();
+				if (deleting_curr)
+					break;
+			}
+
+			m_curr = m_groups.end();
 		}
 	}
 };
@@ -324,24 +331,23 @@ template <class G> class RemoveEdge : public Operation {
 template <class G> class ChangeCurve : public Operation {
   private:
 	using Curve_traits = typename G::Curve_traits;
-	using Curve_representation = Curve_traits::Curve_representation;
+	using Curve_representation = Curve_traits::Curve_representation_2;
 	using Curve = Curve_traits::Curve_2;
 
-	G& m_graph;
 	G::Edge_handle m_edge;
 	Curve_representation m_representation;
 
   public:
-	ChangeCurve(G::Edge_handle e, Curve_representation new_representation)
-	    : m_edge(e), m_representation(new_representation) {}
+	ChangeCurve(G::Edge_handle e, Curve_representation old_representation)
+	    : m_edge(e), m_representation(std::move(old_representation)) {}
 
 	~ChangeCurve() {}
 
-	void undo_internal() override {
+	void undo() override {
 		std::swap(m_edge->m_representation, m_representation);
 	}
 
-	void redo_internal() override {
+	void redo() override {
 		std::swap(m_edge->m_representation, m_representation);
 	}
 };
@@ -354,14 +360,14 @@ template <class G> class MoveVertex : public Operation {
 	Point m_point;
 
   public:
-	MoveVertex(G::Vertex_handle v, Point p) : 
-		m_vertex(v), m_point(std::move(p)) {}
+	MoveVertex(G::Vertex_handle v, Point old_point) : 
+		m_vertex(v), m_point(std::move(old_point)) {}
 	~MoveVertex() {}
 
-	void undo_internal() override {
+	void undo() override {
 		std::swap(m_point, m_vertex->m_point);
 	}
-	void redo_internal() override {
+	void redo() override {
 		std::swap(m_point, m_vertex->m_point);
 	}
 };

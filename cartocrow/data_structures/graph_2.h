@@ -543,12 +543,12 @@ class Graph_2 {
 		}
 	}
 
-	void change_curve(Edge_handle e, Curve_representation new_rep) {
-		e->m_representation = new_rep;
+	void change_curve(Edge_handle e, Curve_representation rep) {
+		std::swap(e->m_representation, rep);
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
-				m_history.add_operation(std::make_unique<ChangeCurve<Graph_2>>(e, new_rep));
+				m_history.add_operation(std::make_unique<ChangeCurve<Graph_2>>(e, rep));
 			}
 		}
 	}
@@ -573,7 +573,7 @@ class Graph_2 {
 			}
 		}
 		
-		v->m_point = p;
+		std::swap(v->m_point, p);
 
 		if constexpr (GraphTraits::historic) {
 			if (m_initialized) {
@@ -682,7 +682,7 @@ class Graph_2 {
 	/// \pre Source vertex of edge e has degree 2.
 	Edge_handle merge_edge_with_prev(Edge_handle e, Curve_2 newCurve) requires GraphTraits::oriented {
 		assert(m_initialized);
-		assert(e->source()->degree() != 2);
+		assert(e->source()->degree() == 2);
 		Edge_handle prev = e->prev();
 
 		Vertex_handle u = prev->source();
@@ -798,6 +798,7 @@ class Graph_2_vertex {
 	template <class G> friend class RemoveEdge;
 	template <class G> friend class AddVertex;
 	template <class G> friend class RemoveVertex;
+	template <class G> friend class MoveVertex;
 
   public:
 	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;

@@ -107,6 +107,10 @@ template <class G, typename T> class Graph_static_vertex_map {
 	T& operator[](const Vertex_handle vtx) {
 		return m_vec[vtx->graph_index()];
 	}
+
+	void assign(const T v) {
+		m_vec.assign(m_vec.size(), v);
+	}
 };
 
 template <class G> class Graph_vertex_index_map {
@@ -148,6 +152,10 @@ template <class G, typename T> class Graph_static_edge_map {
 
 	T& operator[](const Edge_handle edge) {
 		return m_vec[edge->graph_index()];
+	}
+
+	void assign(const T v) {
+		m_vec.assign(m_vec.size(), v);
 	}
 };
 
