@@ -218,9 +218,12 @@ class GeometryWidget : public QWidget, public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
-
+	void setTextScaling(bool textScalesWithZoom);
+	void setTextFont(QFont font);
   private:
 	QFlags<Qt::AlignmentFlag> m_textAlignment = Qt::AlignCenter;
+	bool m_textScalesWithZoom = false;
+	QFont m_font;
 
   public:
 
@@ -305,8 +308,9 @@ class GeometryWidget : public QWidget, public GeometryRenderer {
 	/// Converts a rectangle in Qt coordinates back to drawing coordinates.
 	Box inverseConvertBox(QRectF r) const;
     /// Convert a render path to a Qt path.
-  private:
     QPainterPath renderPathToQt(const RenderPath& p);
+
+	QPainter& painter();
 
   private:
 	/// Converts the polygon to Qt coordinates and adds it to the QPainterPath.

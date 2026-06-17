@@ -694,6 +694,10 @@ QPainterPath GeometryWidget::renderPathToQt(const RenderPath& p) {
     return path;
 }
 
+QPainter& GeometryWidget::painter() {
+	return *m_painter;
+}
+
 void GeometryWidget::draw(const RenderPath& p) {
 	setupPainter();
 	QPainterPath path = renderPathToQt(p);
@@ -710,8 +714,43 @@ void GeometryWidget::draw(const RenderPath& p) {
 void GeometryWidget::drawText(const Point<Inexact>& p, const std::string& text, bool escape) {
 	setupPainter();
 	QPointF p2 = convertPoint(p);
-	m_painter->drawText(QRectF(p2 - QPointF{500, 250}, p2 + QPointF{500, 250}), m_textAlignment,
+
+	auto font = m_font;
+
+	if (m_textScalesWithZoom) {
+		font.setPixelSize(font.pixelSize() * zoomFactor());
+	}
+
+	QFontMetricsF m(font);
+
+	double w = m.horizontalAdvance(QString::fromStdString(text));
+	double h = m.height();
+
+	QRectF rect;
+	double x = p2.x();
+	double y = p2.y();
+
+	if (m_textAlignment & Qt::AlignHCenter)
+		rect.setLeft(x - w / 2);
+	else if (m_textAlignment & Qt::AlignRight)
+		rect.setLeft(x - w);
+	else
+		rect.setLeft(x);
+
+	if (m_textAlignment & Qt::AlignVCenter)
+		rect.setTop(y - h / 2);
+	else if (m_textAlignment & Qt::AlignBottom)
+		rect.setTop(y - h);
+	else
+		rect.setTop(y);
+
+	rect.setSize(QSizeF(w, h));
+
+	m_painter->save();
+	m_painter->setFont(font);
+	m_painter->drawText(rect, m_textAlignment,
 	                    QString::fromStdString(text));
+	m_painter->restore();
 }
 
 void GeometryWidget::drawImage(const Box& target, const QImage& image, const Box& source, Qt::ImageConversionFlag flags) {
@@ -867,6 +906,14 @@ void GeometryWidget::setVerticalTextAlignment(VerticalTextAlignment alignment) {
 		break;
 	}
 	}
+}
+
+void GeometryWidget::setTextFont(QFont font) {
+	m_font = font;
+}
+
+void GeometryWidget::setTextScaling(bool textScalesWithZoom) {
+	m_textScalesWithZoom = textScalesWithZoom;
 }
 
 void GeometryWidget::addPainting(std::shared_ptr<GeometryPainting> painting, const std::string& name) {
