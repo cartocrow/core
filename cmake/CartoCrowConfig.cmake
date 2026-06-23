@@ -25,6 +25,8 @@ else()
     find_dependency(Qt5Widgets REQUIRED)
     find_dependency(Ipelib REQUIRED)
     find_dependency(GDAL REQUIRED)
+
+    include_directories(${CavalierContours_INCLUDE_DIR})
 endif()
 
 # Add the targets file
