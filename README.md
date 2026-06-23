@@ -1,6 +1,7 @@
 # CartoCrow - A framework for algorithmic cartography
 
 [![Linux](https://github.com/cartocrow/core/actions/workflows/build-linux.yml/badge.svg)](https://github.com/cartocrow/core/actions/workflows/build-linux.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20797409.svg)](https://doi.org/10.5281/zenodo.20797409)
 
 <img align="right" src="https://github.com/user-attachments/assets/44ba2c30-bed2-451a-ae40-5763d4e8e74b"/>
 
