@@ -44,8 +44,8 @@ concept IpeReaderTraits = requires(ipe::Object& o, OutputIterator out) {
 // todo: make a RenderPath reader traits that parses everything to a render path?
 
 using IntermediateIpeGeometry = std::variant<
-    PolygonSetRaw<Inexact>, PolygonWithHoles<Inexact>, Polygon<Inexact>, PolylineSet<Inexact>, Polyline<Inexact>, Point<Inexact>, PointSet<Inexact>, 
-	CubicBezierCurve, CubicBezierSpline, Ellipse>;
+    PolygonSetRaw<Inexact>, PolygonWithHoles<Inexact>, Polygon<Inexact>, PolylineSet<Inexact>, Polyline<Inexact>, Segment<Inexact>, 
+	Point<Inexact>, PointSet<Inexact>, CubicBezierCurve, CubicBezierSpline, Ellipse>;
 
 template <class Geometry, class OutputIterator, class Traits>
 concept IpeReaderIntermediateGeometryConverter = requires(const IntermediateIpeGeometry& g, OutputIterator out) {
@@ -95,7 +95,6 @@ struct IpeReaderIntermediateGeometryTraits {
 		bool allClosed = true;
 		bool allOpen = true;
 		for (int i = 0; i < shape.countSubPaths(); ++i) {
-			
 			auto* ssp = shape.subPath(i);
 			if (!ssp->closed()) {
 				allClosed = false;
@@ -163,7 +162,11 @@ struct IpeReaderIntermediateGeometryTraits {
 					polyline.push_back(Point<Inexact>(v.x, v.y));
 				}
 				if (shape.countSubPaths() == 1) {
-					*out++ = polyline;
+					if (polyline.num_edges() == 1) {
+						*out++ = polyline.edge(0);
+					} else {
+						*out++ = polyline;
+					}
 				} else {
 					ps.polylines.push_back(polyline);
 				}
@@ -257,7 +260,12 @@ struct IpeReaderIntermediateGeometryTraits {
 							                   Point<Inexact>(bezier.iV[2].x, bezier.iV[2].y),
 							                   Point<Inexact>(bezier.iV[3].x, bezier.iV[3].y));
 						}
-						*out++ = spline;
+
+						if (spline.numCurves() == 1) {
+							*out++ = spline.curve(0);
+						} else {
+							*out++ = spline;
+						}
 					}
 				}
 			}
@@ -305,7 +313,10 @@ namespace {
 // models GeometryReader and GeometryReaderFor every Geometry
 class IpeReader {
   private:
+	/// The page to read from
 	int m_pageNumber = 0;
+	/// The layer to read from. If std::nullopt then it reads from all layers.
+	std::optional<std::variant<int, std::string>> m_layer = std::nullopt;
 
   public:
 	// ===== Static Ipe helpers =====
@@ -316,9 +327,9 @@ class IpeReader {
 			using Iterator = std::istreambuf_iterator<char>;
 			input.assign(Iterator(fin), Iterator());
 		} else {
-			std::stringstream ss;
-			ss << "Cannot open file " << filename;
-			throw std::runtime_error(ss.str());
+			 std::stringstream ss;
+			 ss << "Cannot open file " << filename;
+			 throw std::runtime_error(ss.str());
 		}
 
 		ipe::Platform::initLib(ipe::IPELIB_VERSION);
@@ -330,27 +341,81 @@ class IpeReader {
 
 		if (load_reason > 0) {
 			throw std::runtime_error("Unable to load Ipe file: parse error at position " +
-			                         std::to_string(load_reason));
+				std::to_string(load_reason));
 		} else if (load_reason == ipe::Document::EVersionTooOld) {
 			throw std::runtime_error("Unable to load Ipe file: the version of the file is too old");
 		} else if (load_reason == ipe::Document::EVersionTooRecent) {
 			throw std::runtime_error(
-			    "Unable to load Ipe file: the file version is newer than Ipelib");
+				"Unable to load Ipe file: the file version is newer than Ipelib");
 		} else if (load_reason == ipe::Document::EFileOpenError) {
 			throw std::runtime_error("Unable to load Ipe file: error opening the file");
 		} else if (load_reason == ipe::Document::ENotAnIpeFile) {
 			throw std::runtime_error(
-			    "Unable to load Ipe file: the file does not exist or was not created by Ipe");
+				"Unable to load Ipe file: the file does not exist or was not created by Ipe");
 		}
 
 		return std::shared_ptr<ipe::Document>(document);
 	}
 
 	Color convertIpeColor(ipe::Color color) {
-		return Color{static_cast<int>(color.iRed.toDouble() * 255),
-		             static_cast<int>(color.iGreen.toDouble() * 255),
-		             static_cast<int>(color.iBlue.toDouble() * 255)};
+		return Color{ static_cast<int>(color.iRed.toDouble() * 255),
+					 static_cast<int>(color.iGreen.toDouble() * 255),
+					 static_cast<int>(color.iBlue.toDouble() * 255) };
 	}
+
+	// ===== Ipe reader specific functions =====
+	/// Set the page to read from.
+	/// Note! Page indices start at zero (so pass one integer smaller than the one the ipe GUI shows).
+	void setPage(int pageNumber) {
+		m_pageNumber = pageNumber;
+	}
+
+	/// Removes the layer filter so that objects are read from all layers.
+	void removeLayerFilter() {
+		m_layer = std::nullopt;
+	}
+
+	/// Read objects only from the specified layer
+	void setLayerFilter(int layerNumber) {
+		m_layer = layerNumber;
+	}
+
+	/// Read objects only from the specified layer
+	void setLayerFilter(std::string layerName) {
+		m_layer = layerName;
+	}
+
+	/// Return the number of pages in the ipe document
+	int numberOfPages(std::filesystem::path path) {
+		auto doc = loadIpeFile(path);
+		return doc->countPages();
+	}
+
+	/// Number of layers
+	int numberOfLayer(std::filesystem::path path, int pageIndex) {
+		auto doc = loadIpeFile(path);
+		auto page = doc->page(pageIndex);
+		return page->countLayers();
+	}
+
+  private:
+	/// Whether to skip the ipe object with index i in the given page.
+	bool skipObject(ipe::Page* page, int i) const {
+		if (m_layer.has_value()) {
+			auto layerIndex = page->layerOf(i);
+			if (auto* layerIndexP = std::get_if<int>(&*m_layer)) {
+				if (layerIndex != *layerIndexP)
+					return true; // object is not on layer so we skip
+			} else if (auto* layerNameP = std::get_if<std::string>(&*m_layer)) {
+				if (*page->layer(layerIndex).data() != *layerNameP->c_str()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+  public:
 
 	// ===== Reader methods =====
 
@@ -371,7 +436,7 @@ class IpeReader {
 		class OutputIterator,
 		class Traits = BasicIpeReaderTraits<Geometry>
 	>
-	requires IpeReaderTraits<Geometry, OutputIterator, Traits>
+		requires IpeReaderTraits<Geometry, OutputIterator, Traits>
 	void read(std::filesystem::path path, OutputIterator out) {
 		std::shared_ptr<ipe::Document> document = IpeReader::loadIpeFile(path);
 
@@ -379,7 +444,8 @@ class IpeReader {
 			std::cerr << "Current page number exceeds document page count." << std::endl;
 			std::cerr << "Setting page number to last page." << std::endl;
 			m_pageNumber = document->countPages() - 1;
-		} else if (m_pageNumber < 0) {
+		}
+		else if (m_pageNumber < 0) {
 			std::cerr << "Current page number is negative." << std::endl;
 			std::cerr << "Setting page number to first page." << std::endl;
 			m_pageNumber = 0;
@@ -388,9 +454,20 @@ class IpeReader {
 		ipe::Page* page = document->page(m_pageNumber);
 
 		for (int i = 0; i < page->count(); ++i) {
+			if (skipObject(page, i))
+				continue;
 			ipe::Object* object = page->object(i);
 			Traits::convert(*object, out);
 		}
+	}
+
+	/// Convenience function that calls read and stores the results in a vector.
+	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
+	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
+	std::vector<Geometry> readV(std::filesystem::path path) {
+		std::vector<Geometry> gs;
+		read<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>(path, std::back_inserter(gs));
+		return gs;
 	}
 
 	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
@@ -412,6 +489,8 @@ class IpeReader {
 
 		std::vector<Geometry> gs;
 		for (int i = 0; i < page->count(); ++i) {
+			if (skipObject(page, i))
+				continue;
 			ipe::Object* object = page->object(i);
 			Traits::convert(*object, std::back_inserter(gs));
 			if (!gs.empty())

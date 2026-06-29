@@ -27,6 +27,16 @@ struct PolygonSetRaw {
 		}
 		return polygonSet;
 	}
+
+	PolygonSetRaw() = default;
+
+	PolygonSetRaw(Polygon<K> polygon) {
+		polygons_with_holes.emplace_back(std::move(polygon));
+	}
+
+	PolygonSetRaw(PolygonWithHoles<K> polygon) {
+		polygons_with_holes.push_back(std::move(polygon));
+	}
 };
 
 PolygonSetRaw<Inexact> approximate(const PolygonSetRaw<Exact>& pgs);

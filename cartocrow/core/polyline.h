@@ -100,6 +100,8 @@ template <class K> class Polyline {
 		std::copy(begin, end, std::back_inserter(m_points));
 	}
 
+	Polyline(Segment<K> segment) : m_points({segment.source(), segment.target()}) {};
+
 	explicit Polyline(std::vector<CGAL::Point_2<K>> points): m_points(points) {};
 
 	void push_back(const CGAL::Point_2<K>& p) {

@@ -94,6 +94,9 @@ class CubicBezierCurve {
 	/// Construct a cubic Bézier curve from two endpoints.
 	CubicBezierCurve(Point<K> source, Point<K> target);
 
+	/// Construct a cubic Bézier curve from a line segment.
+	CubicBezierCurve(Segment<K> seg);
+
 	/// Returns the source of this curve.
 	Point<K> source() const;
 	/// Returns the control point on the source side of this curve.
@@ -321,6 +324,15 @@ class CubicBezierSpline {
 	template <class InputIterator>
 	CubicBezierSpline(InputIterator begin, InputIterator end) : m_c(begin, end)
 		{ assert(m_c.size() == 0 || (m_c.size() - 1) % 3 == 0);}
+
+	/// Create a spline from a polyline.
+	CubicBezierSpline(Segment<K> segment);
+
+	/// Create a spline from a single curve;
+	CubicBezierSpline(CubicBezierCurve curve);
+
+	/// Create a spline from a polyline.
+	CubicBezierSpline(Polyline<K> polyline);
 
 	/// Append a cubic Bézier curve.
 	void appendCurve(const Curve& curve);

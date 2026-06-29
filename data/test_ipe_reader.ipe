@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70218" creator="Ipe 7.2.28">
-<info created="D:20260626164149" modified="D:20260626180637"/>
+<info created="D:20260626164149" modified="D:20260629140831"/>
 <ipestyle name="bettinacolors">
 <color name="Bettina blue" value="0 0.4 0.796"/>
 <color name="Bettina green" value="0.282 0.557 0"/>
@@ -450,12 +450,115 @@ h
 <use name="mark/disk(sx)" pos="64 0" size="normal" stroke="black"/>
 <use name="mark/disk(sx)" pos="64 64" size="normal" stroke="black"/>
 <use name="mark/disk(sx)" pos="0 64" size="normal" stroke="black"/>
-<path stroke="black" cap="1" join="1">
+<path stroke="black" pen="heavier" cap="1" join="1">
 144.544 155.39 m
 123.907 113.135 l
 178.446 67.44 l
 249.199 124.927 l
 h
 </path>
+</page>
+<page>
+<layer name="alpha"/>
+<view layers="alpha" active="alpha"/>
+<path layer="alpha" matrix="1 0 0 1 -41.9929 -308.446" stroke="black" fill="CB light green" pen="heavier" cap="1" join="1">
+114.865 425.25 m
+63.4295 398.019 l
+83.0962 364.359 l
+119.026 388.564 l
+139.827 353.013 l
+191.641 404.071 l
+h
+126.754 413.814 m
+170.227 401.938 l
+145.129 368.101 l
+121.824 404.178 l
+h
+</path>
+<path matrix="1 0 0 1 -31.6263 -315.551" stroke="black" fill="CB light red" pen="heavier" cap="1" join="1">
+109.155 363.72 m
+98.5656 347.457 l
+125.418 339.893 l
+118.61 360.694 l
+h
+133.558 349.21 m
+133.73 339.896 l
+149.254 337.826 l
+149.772 344.898 l
+h
+</path>
+<path matrix="1 0 0 1 -41.9929 -308.446" stroke="black" fill="CB light blue" pen="heavier" cap="1" join="1">
+126.754 413.814 m
+121.824 404.178 l
+145.129 368.101 l
+170.227 401.938 l
+h
+</path>
+</page>
+<page>
+<layer name="alpha"/>
+<view layers="alpha" active="alpha"/>
+<path layer="alpha" matrix="1 0 0 1 -2.03783 22.7073" stroke="black" pen="heavier" cap="1" join="1">
+25.5402 46.4026 m
+35.4382 72.8944 l
+77.6505 53.3894 l
+85.8018 80.7546 l
+113.749 67.072 l
+110.256 48.7315 l
+156.544 62.7053 l
+134.419 88.6149 l
+</path>
+<path matrix="1 0 0 1 -2.40717 0.359757" stroke="black" pen="heavier" cap="1" join="1">
+27.578 37.0868 m
+39.5139 47.8582
+60.4745 28.3532
+76.1949 33.5933
+92.2065 48.1493
+120.445 57.174
+135.583 37.9601
+155.088 54.5539 c
+</path>
+<path stroke="black" pen="heavier" cap="1" join="1">
+37.8869 109.428 m
+61.4676 126.313 l
+</path>
+<path matrix="1 0 0 1 -12.6105 -7.97185" stroke="black" pen="heavier" cap="1" join="1">
+43.3035 58.7575 m
+57.7755 73.3623
+78.0893 59.4214
+95.7478 72.8312 c
+</path>
+</page>
+<page>
+<layer name="blue"/>
+<layer name="red"/>
+<layer name="green"/>
+<view layers="blue red green" active="green"/>
+<use layer="blue" name="mark/fdisk(sfx)" pos="44.2165 103.819" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="20.2393 81.4104" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="32.3399 61.0186" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="92.619 59.45" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="98.6693 89.4775" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="47.3537 91.0461" size="normal" stroke="black" fill="CB light blue"/>
+<use name="mark/fdisk(sfx)" pos="50.4909 62.8113" size="normal" stroke="black" fill="CB light blue"/>
+<use layer="red" name="mark/fdisk(sfx)" pos="60.9306 81.5427" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="70.3573 98.6701" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="78.9874 55.1213" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="45.662 72.6471" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="32.916 92.5626" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="23.7548 35.3385" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="58.5407 48.4828" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="67.3036 64.9464" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="92.9283 73.3109" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="105.674 73.1781" size="normal" stroke="black" fill="CB light red"/>
+<use name="mark/fdisk(sfx)" pos="81.6428 78.489" size="normal" stroke="black" fill="CB light red"/>
+<use layer="green" name="mark/fdisk(sfx)" pos="33.974 45.0564" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="43.8058 19.3558" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="67.0916 27.8077" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="70.3689 37.2945" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="86.7552 40.0543" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="96.4145 28.1526" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="100.727 41.0892" size="normal" stroke="black" fill="CB light green"/>
+<use name="mark/fdisk(sfx)" pos="104.866 50.576" size="normal" stroke="black" fill="CB light green"/>
 </page>
 </ipe>
