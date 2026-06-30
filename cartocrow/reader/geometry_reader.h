@@ -17,6 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "../core/geometric_feature.h"
+
 #include <optional>
 #include <string>
 #include <filesystem>
@@ -36,16 +38,28 @@ concept GeometryReaderFor =
     GeometryReader<R> && requires(R reader, std::filesystem::path path, OutputIterator out) {
 
 	/// Returns all geometries in the provided file that are convertible to Geometry.
-	/// precondition: canRead(path)
+	/// \pre canRead(path)
 	reader.template read<Geometry>(path, out);
 
+	/// Returns a vector with all geometries in the provided file that are convertible to Geometry.
+	/// \pre canRead(path)
+	{reader.template readV<Geometry>(path)}->std::same_as<std::vector<Geometry>>;
+
 	/// Returns the first geometry in the provided file that is convertible to Geometry.
-	/// precondition: canRead(path)
+	/// \pre canRead(path)
 	{reader.template readSingle<Geometry>(path)}->std::same_as<std::optional<Geometry>>;
 
 	/// Returns geometries in the provided file that are convertible to Geometry including their attributes.
 	/// Outputs Feature<Geometry>.
-	/// precondition: canRead(path)
+	/// \pre canRead(path)
 	reader.template readWithAttributes<Geometry>(path, out);
+
+	/// Returns a vector with all geometries in the provided file that are convertible to Geometry including their attributes.
+	/// \pre canRead(path)
+	{reader.template readWithAttributesV<Geometry>(path)}->std::same_as<std::vector<GeometricFeature<Geometry>>>;
+
+	/// Returns the first feature in the provided file that is convertible to Geometry.
+	/// \pre canRead(path)
+	{reader.template readSingleWithAttributes<Geometry>(path)}->std::same_as<std::optional<GeometricFeature<Geometry>>>;
 };
 }

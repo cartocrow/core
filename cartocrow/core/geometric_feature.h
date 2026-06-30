@@ -23,10 +23,10 @@ namespace cartocrow {
 using GeometryAttribute = std::variant<int, std::vector<int>, double, std::vector<double>, 
 										std::string, std::vector<std::string>, int64_t>;
 
-using GeometryAttributes = std::unordered_map<std::string, RegionAttribute>;
+using GeometryAttributes = std::unordered_map<std::string, GeometryAttribute>;
 
 template <class Geometry> struct GeometricFeature {
 	Geometry geometry;
 	GeometryAttributes attributes;
-}
+};
 }

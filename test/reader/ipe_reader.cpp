@@ -123,6 +123,41 @@ TEST_CASE("Read points from specific layer") {
 	CHECK(greenPoints.size() == 8);
 }
 
+TEST_CASE("Read attributes") {
+	std::filesystem::path fn("data/test_ipe_reader.ipe");
+
+	IpeReader ipeReader;
+	ipeReader.setPage(3);
+
+	ipeReader.setLayerFilter("red");
+	auto redPoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+	ipeReader.setLayerFilter(0);
+	auto bluePoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+	ipeReader.setLayerFilter("green");
+	auto greenPoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+
+	CHECK(bluePoints.size() == 7);
+	for (const auto& bp : bluePoints) {
+		CHECK(bp.attributes.contains("fill"));
+		CHECK(std::holds_alternative<std::string>(bp.attributes.at("fill")));
+		CHECK(std::get<std::string>(bp.attributes.at("fill")) == "CB light blue");
+	}
+
+	CHECK(redPoints.size() == 11);
+	for (const auto& rp : redPoints) {
+		CHECK(rp.attributes.contains("fill"));
+		CHECK(std::holds_alternative<std::string>(rp.attributes.at("fill")));
+		CHECK(std::get<std::string>(rp.attributes.at("fill")) == "CB light red");
+	}
+
+	CHECK(greenPoints.size() == 8);
+	for (const auto& gp : greenPoints) {
+		CHECK(gp.attributes.contains("fill"));
+		CHECK(std::holds_alternative<std::string>(gp.attributes.at("fill")));
+		CHECK(std::get<std::string>(gp.attributes.at("fill")) == "CB light green");
+	}
+}
+
 //TEST_CASE("Manual check: load and save test_ipe_reader.ipe; geometries should be equivalent") {
 //	IpeReader ipeReader;
 //	IpeRenderer ipeRenderer;
