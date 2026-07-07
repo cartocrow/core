@@ -24,6 +24,9 @@ class Ellipse {
 
 	Ellipse() : A(1), B(), C(1), D(), E(), F(-1) {}
 	Ellipse(double a, double b, double c, double d, double e, double f);
+	Ellipse(Circle<Inexact> c)
+	    : A(1), B(0), C(1), D(-2 * c.center().x()), E(-2 * c.center().y()),
+	      F(c.center().x() * c.center().x() + c.center().y() * c.center().y() - c.squared_radius()) {}
 
 	double angle() const;
 	Point<Inexact> center() const;

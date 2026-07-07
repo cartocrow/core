@@ -48,7 +48,7 @@ concept IpeReaderTraits = requires(ipe::Object& o, OutputIterator out) {
 
 using IntermediateIpeGeometry = std::variant<
     PolygonSetRaw<Inexact>, PolygonWithHoles<Inexact>, Polygon<Inexact>, PolylineSet<Inexact>, Polyline<Inexact>, Segment<Inexact>, 
-	Point<Inexact>, PointSet<Inexact>, CubicBezierCurve, CubicBezierSpline, Ellipse>;
+	Point<Inexact>, PointSet<Inexact>, CubicBezierCurve, CubicBezierSpline, Circle<Inexact>, Ellipse>;
 
 template <class Geometry, class OutputIterator, class Traits>
 concept IpeReaderIntermediateGeometryConverter = requires(const IntermediateIpeGeometry& g, OutputIterator out) {
@@ -106,13 +106,13 @@ struct IpeReaderIntermediateGeometryTraits {
 			}
 			if (ssp->type() != ipe::SubPath::ECurve) {
 				allStraightSegments = false;
-			}
-
-			const ipe::Curve* curve = ssp->asCurve();
-			for (int j = 0; j < curve->countSegments() && allStraightSegments; ++j) {
-				ipe::CurveSegment segment = curve->segment(j);
-				if (segment.type() != ipe::CurveSegment::ESegment) {
-					allStraightSegments = false;
+			} else {
+				const ipe::Curve* curve = ssp->asCurve();
+				for (int j = 0; j < curve->countSegments() && allStraightSegments; ++j) {
+					ipe::CurveSegment segment = curve->segment(j);
+					if (segment.type() != ipe::CurveSegment::ESegment) {
+						allStraightSegments = false;
+					}
 				}
 			}
 		}
@@ -189,18 +189,52 @@ struct IpeReaderIntermediateGeometryTraits {
 				std::vector<ipe::Bezier> beziers;
 				ssp->asClosedSpline()->beziers(beziers);
 				for (auto bezier : beziers) {
-					spline.appendCurve(Point<Inexact>(bezier.iV[0].x, bezier.iV[0].y),
-						                Point<Inexact>(bezier.iV[1].x, bezier.iV[1].y),
-						                Point<Inexact>(bezier.iV[2].x, bezier.iV[2].y),
-						                Point<Inexact>(bezier.iV[3].x, bezier.iV[3].y));
+					auto c0T = matrix * bezier.iV[0];
+					auto c1T = matrix * bezier.iV[1];
+					auto c2T = matrix * bezier.iV[2];
+					auto c3T = matrix * bezier.iV[3];
+					spline.appendCurve(Point<Inexact>(c0T.x, c0T.y),
+						               Point<Inexact>(c1T.x, c1T.y),
+						               Point<Inexact>(c2T.x, c2T.y),
+						               Point<Inexact>(c3T.x, c3T.y));
 				}
 				*out++ = spline;
 			} else if (ssp->type() == ipe::SubPath::EEllipse) {
-				auto matrix = ssp->asEllipse()->matrix();
-				
-				Ellipse ellipse(matrix.a[0], matrix.a[1], matrix.a[2], matrix.a[3], matrix.a[4],
-				                matrix.a[5]);
-				*out++ = ellipse;
+				auto ellipseMatrix = ssp->asEllipse()->matrix();
+				auto finalMatrix = matrix * ellipseMatrix;
+				// Transposed linear map
+				auto a = finalMatrix.a[0];
+				auto b = finalMatrix.a[2];
+				auto c = finalMatrix.a[1];
+				auto d = finalMatrix.a[3];
+				// Translation
+				auto e = finalMatrix.a[4];
+				auto f = finalMatrix.a[5];
+				double det = a * d - b * c;
+				double ia = d / det;
+				double ib = -b / det;
+				double ic = -c / det;
+				double id = a / det;
+				double q11 = ia * ia + ic * ic;
+				double q12 = ia * ib + ic * id;
+				double q22 = ib * ib + id * id;
+				double tx = e;
+				double ty = f;
+				double A = q11;
+				double B = 2 * q12;
+				double C = q22;
+				double D = -2 * (q11 * tx + q12 * ty);
+				double E = -2 * (q12 * tx + q22 * ty);
+				double F = q11 * tx * tx + 2 * q12 * tx * ty + q22 * ty * ty - 1;
+
+				if (std::abs(B) < M_EPSILON && std::abs(A - C) < M_EPSILON) {
+					Point<Inexact> center(-D / (2 * A), -E / (2 * A));
+					Circle<Inexact> circle(center, center.x() * center.x() + center.y() * center.y() - F / A);
+					*out++ = circle;
+				} else {
+					Ellipse ellipse(A, B, C, D, E, F);
+					*out++ = ellipse;
+				}
 			} else if (ssp->type() == ipe::SubPath::ECurve) {
 				auto* curve = ssp->asCurve();
 
@@ -258,10 +292,14 @@ struct IpeReaderIntermediateGeometryTraits {
 						// todo test if .beziers also converts circular arcs
 						CubicBezierSpline spline;
 						for (auto bezier : beziers) {
-							spline.appendCurve(Point<Inexact>(bezier.iV[0].x, bezier.iV[0].y),
-							                   Point<Inexact>(bezier.iV[1].x, bezier.iV[1].y),
-							                   Point<Inexact>(bezier.iV[2].x, bezier.iV[2].y),
-							                   Point<Inexact>(bezier.iV[3].x, bezier.iV[3].y));
+							auto c0T = matrix * bezier.iV[0];
+							auto c1T = matrix * bezier.iV[1];
+							auto c2T = matrix * bezier.iV[2];
+							auto c3T = matrix * bezier.iV[3];
+							spline.appendCurve(Point<Inexact>(c0T.x, c0T.y),
+											   Point<Inexact>(c1T.x, c1T.y),
+											   Point<Inexact>(c2T.x, c2T.y),
+											   Point<Inexact>(c3T.x, c3T.y));
 						}
 
 						if (spline.numCurves() == 1) {

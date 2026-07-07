@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70218" creator="Ipe 7.2.28">
-<info created="D:20260626164149" modified="D:20260629140831"/>
+<info created="D:20260626164149" modified="D:20260706104323"/>
 <ipestyle name="bettinacolors">
 <color name="Bettina blue" value="0 0.4 0.796"/>
 <color name="Bettina green" value="0.282 0.557 0"/>
@@ -560,5 +560,26 @@ h
 <use name="mark/fdisk(sfx)" pos="96.4145 28.1526" size="normal" stroke="black" fill="CB light green"/>
 <use name="mark/fdisk(sfx)" pos="100.727 41.0892" size="normal" stroke="black" fill="CB light green"/>
 <use name="mark/fdisk(sfx)" pos="104.866 50.576" size="normal" stroke="black" fill="CB light green"/>
+</page>
+<page>
+<layer name="alpha"/>
+<view layers="alpha" active="alpha"/>
+<path layer="alpha" matrix="1.25734 0.72789 -0.52979 0.364411 173.061 -150.969" stroke="black" cap="1" join="1">
+24.6994 0 0 24.6994 78.1795 429.032 e
+</path>
+<path matrix="1 0 0 1 -13.5064 -372.094" stroke="black" cap="1" join="1">
+19.898 0 0 19.898 95.5769 405.205 e
+</path>
+<path stroke="black" cap="1" join="1">
+12.7644 5.00189 17.7555 12.1402 121.05 80.6025 e
+</path>
+<group>
+<path stroke="black" cap="1" join="1">
+5.95769 0 0 5.95769 112.634 55.5553 e
+</path>
+<path stroke="black" cap="1" join="1">
+2.58731 0 0 2.58731 113.152 25.715 e
+</path>
+</group>
 </page>
 </ipe>
