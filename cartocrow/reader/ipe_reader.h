@@ -398,10 +398,23 @@ class IpeReader {
 		return std::shared_ptr<ipe::Document>(document);
 	}
 
-	Color convertIpeColor(ipe::Color color) {
+	static Color convertIpeColor(ipe::Color color) {
 		return Color{ static_cast<int>(color.iRed.toDouble() * 255),
 					 static_cast<int>(color.iGreen.toDouble() * 255),
 					 static_cast<int>(color.iBlue.toDouble() * 255) };
+	}
+
+	static Color convertStringToColor(std::string s, std::filesystem::path path) {
+		std::istringstream iss(s);
+		double r, g, b;
+		if (!(iss >> r >> g >> b)) {
+			auto doc = loadIpeFile(path);
+			ipe::Attribute attr(true, ipe::String(s.data()));
+			return convertIpeColor(doc->cascade()->find(ipe::Kind::EColor, attr).color());
+		}
+
+		return {static_cast<int>(std::lround(r * 255)), static_cast<int>(std::lround(g * 255)),
+		        static_cast<int>(std::lround(b * 255))};
 	}
 
 	// ===== Ipe reader specific functions =====

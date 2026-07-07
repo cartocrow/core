@@ -2,6 +2,8 @@ set(TEST_SOURCES "cartocrow_test.cpp"
 	"core/cubic_bezier.cpp"
 	"core/core.cpp"
 	"core/polygon_helpers.cpp"
+	"core/region_arrangement.cpp"
+	"core/region_map.cpp"
 	"renderer/ipe_renderer.cpp"
 	"reader/ipe_reader.cpp"
 )

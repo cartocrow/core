@@ -22,8 +22,22 @@ struct PolygonSetRaw {
 
 	PolygonSet<K> polygonSet() const {
 		PolygonSet<K> polygonSet;
-		for (const auto& pgn : polygons_with_holes) {
-			polygonSet.join(pgn);
+		for (auto pgn : polygons_with_holes) {
+			if (!pgn.outer_boundary().is_simple()) {
+				throw std::runtime_error("Encountered non-simple polygon");
+			}
+			if (pgn.outer_boundary().is_clockwise_oriented()) {
+				pgn.outer_boundary().reverse_orientation();
+			}
+			for (auto& hole : pgn.holes()) {
+				if (!hole.is_simple()) {
+					throw std::runtime_error("Encountered non-simple polygon");
+				}
+				if (hole.is_counterclockwise_oriented()) {
+					hole.reverse_orientation();
+				}
+			}
+			polygonSet.symmetric_difference(pgn);
 		}
 		return polygonSet;
 	}

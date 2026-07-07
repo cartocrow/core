@@ -24,8 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace cartocrow {
 /// Type that serves as an internal representation of the straight (i.e. linear) features of the OGC Simple Feature Access.
-/// OGC name:                         MultiPolygon      Polygon              LinearRing  MultiLineString LineString   Point     MultiPoint
+/// OGC name:                         MultiPolygon      Polygon              LinearRing
 template <class K>
 using StraightGeometry = std::variant<PolygonSetRaw<K>, PolygonWithHoles<K>, Polygon<K>,
+//                                    MultiLineString LineString   Point     MultiPoint
                                       PolylineSet<K>, Polyline<K>, Point<K>, PointSet<K>>;
 }
