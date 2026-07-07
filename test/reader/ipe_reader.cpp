@@ -174,31 +174,22 @@ TEST_CASE("Read ellipses and circles") {
 	CHECK(ellipses.size() == 5);
 }
 
-TEST_CASE("Manual check: load and save test_ipe_reader.ipe; geometries should be equivalent") {
-	IpeReader ipeReader;
-	IpeRenderer ipeRenderer;
-	
-	auto fn = "data/test_ipe_reader.ipe";
-
-	for (int pageIndex = 0; pageIndex < ipeReader.numberOfPages(fn); ++pageIndex) {
-		ipeReader.setPage(pageIndex);
-		auto geoms = ipeReader.readV<IntermediateIpeGeometry>(fn);
-		ipeRenderer.addPainting([geoms](GeometryRenderer& r) {
-			for (const auto& g : geoms) {
-				std::visit([&](auto& someG) { r.draw(someG); }, g);
-			}
-		});
-		ipeRenderer.nextPage();
-	}
-
-	ipeRenderer.addPainting([](GeometryRenderer& r) {
-		//Ellipse e;
-		//auto e_ = e.stretch(1/2.0, 1/7.0);
-		//auto e__ = e_.translateTo({12.0, 14.0});
-		//r.draw(e__);
-		Ellipse e(0.3, 0.1, 0.1, -1, 0.6, -1);
-		r.draw(e);
-	});
-
-	ipeRenderer.save("test_ipe_reader_saved.ipe");
-}
+//TEST_CASE("Manual check: load and save test_ipe_reader.ipe; geometries should be equivalent") {
+//	IpeReader ipeReader;
+//	IpeRenderer ipeRenderer;
+//	
+//	auto fn = "data/test_ipe_reader.ipe";
+//
+//	for (int pageIndex = 0; pageIndex < ipeReader.numberOfPages(fn); ++pageIndex) {
+//		ipeReader.setPage(pageIndex);
+//		auto geoms = ipeReader.readV<IntermediateIpeGeometry>(fn);
+//		ipeRenderer.addPainting([geoms](GeometryRenderer& r) {
+//			for (const auto& g : geoms) {
+//				std::visit([&](auto& someG) { r.draw(someG); }, g);
+//			}
+//		});
+//		ipeRenderer.nextPage();
+//	}
+//
+//	ipeRenderer.save("test_ipe_reader_saved.ipe");
+//}
