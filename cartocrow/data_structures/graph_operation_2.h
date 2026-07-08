@@ -206,6 +206,7 @@ template <class G> class RemoveVertex : public Operation {
 			}
 		} else {
 			m_graph.m_vertices.push_back(m_graph.m_vertices[index]);
+			m_graph.m_vertices.back()->m_index = m_graph.m_vertices.size()  - 1;
 			m_graph.m_vertices[index] = m_vertex;
 			for (Graph_map_base* m : m_graph.m_vertex_maps) {
 				m->add_index(index);
@@ -311,6 +312,7 @@ template <class G> class RemoveEdge : public Operation {
 			}
 		} else {
 			m_graph.m_edges.push_back(m_graph.m_edges[index]);
+			m_graph.m_edges.back()->m_index = m_graph.m_edges.size() - 1;
 			m_graph.m_edges[index] = m_edge;
 			for (Graph_map_base* m : m_graph.m_edge_maps) {
 				m->add_index(index);
