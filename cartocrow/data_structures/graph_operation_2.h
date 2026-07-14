@@ -163,9 +163,16 @@ class History {
 		}
 	}
 	void forget_future() {
-		while (m_curr != m_groups.end()) {
-			m_groups.front().forget_future();
-			m_groups.pop_back();
+		if (m_curr != m_groups.end()) {
+			while (true) {
+				bool deleting_curr = m_curr == (--m_groups.end());
+				m_groups.back().forget_future();
+				m_groups.pop_back();
+				if (deleting_curr)
+					break;
+			}
+
+			m_curr = m_groups.end();
 		}
 	}
 };

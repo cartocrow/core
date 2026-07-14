@@ -107,7 +107,8 @@ void IpeRenderer::save(const std::filesystem::path& file) {
 
 	auto pdf = file.extension() == ".pdf";
 	if (pdf) {
-		bool success = document.runLatex(file.c_str());
+		auto file_str = file.string();
+		bool success = document.runLatex(file_str.c_str());
 		if (!success) {
 			std::cerr << "LaTeX compilation failed." << std::endl;
 		}
