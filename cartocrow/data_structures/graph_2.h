@@ -86,7 +86,8 @@ class Graph_2 {
 				m->add_index();
 			}
 		} else {
-			m_vertices.push_back(m_vertices[index]);
+			m_vertices[index]->m_index = m_vertices.size();
+			m_vertices.push_back(m_vertices[index]);			
 			m_vertices[index] = v;
 			for (Graph_map_base* m : m_vertex_maps) {
 				m->add_index(index);
@@ -119,6 +120,7 @@ class Graph_2 {
 				m->add_index();
 			}
 		} else {
+			m_edges[index]->m_index = m_edges.size();
 			m_edges.push_back(m_edges[index]);
 			m_edges[index] = e;
 			for (Graph_map_base* m : m_edge_maps) {
@@ -1403,12 +1405,6 @@ class Graph_2_edge {
 	}
 	Edge_const_handle next() const requires GraphTraits::oriented {
 		return m_target->outgoing();
-	}
-	Edge_data& data() {
-		return m_data;
-	}
-	const Edge_data& data() const {
-		return m_data;
 	}
 };
 
