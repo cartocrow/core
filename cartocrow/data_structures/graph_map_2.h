@@ -156,4 +156,46 @@ template <class G> class Graph_edge_index_map {
 	}
 };
 
+template <class G, typename T>
+class Graph_path_map : public Graph_map<G, typename G::Path_handle, T> {
+	G& m_graph;
+
+  public:
+	Graph_path_map(G& graph, const T init)
+	    : Graph_map<G, typename G::Path_handle, T>(init, graph.number_of_paths()), m_graph(graph) {
+		this->m_graph.add_path_map(this);
+	}
+
+	~Graph_path_map() {
+		this->m_graph.remove_path_map(this);
+	}
+};
+
+template <class G, typename T> class Graph_static_path_map {
+
+  public:
+	using Path_handle = G::Path_handle;
+
+  private:
+	std::vector<T> m_vec;
+
+  public:
+	Graph_static_path_map(const G& graph, const T init) {
+		m_vec.resize(graph.number_of_edges(), init);
+	}
+
+	T& operator[](const Path_handle edge) {
+		return m_vec[edge->graph_index()];
+	}
+};
+
+template <class G> class Graph_path_index_map {
+  public:
+	using Path_handle = G::Path_handle;
+
+	size_t operator[](const Path_handle edge) {
+		return edge->graph_index();
+	}
+};
+
 } // namespace cartocrow

@@ -11,6 +11,8 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, Grap
 class Graph_2_vertex;
 template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2_edge;
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+class Graph_2_path;
 
 template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 class Graph_2 {
@@ -18,14 +20,23 @@ class Graph_2 {
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	template <typename G, typename T> friend class Graph_vertex_map;
 	template <typename G, typename T> friend class Graph_edge_map;
+	template <typename G, typename T> friend class Graph_path_map;
 
-	template <class G> friend class AddVertex;
-	template <class G> friend class RemoveVertex;
-	template <class G> friend class AddEdge;
-	template <class G> friend class RemoveEdge;
+	// basic operations
+	template <class G> friend class detail::AddVertex;
+	template <class G> friend class detail::RemoveVertex;
+	template <class G> friend class detail::AddEdge;
+	template <class G> friend class detail::RemoveEdge;
+	// geometric operations
+	template <class G> friend class detail::ChangeCurve;
+	template <class G> friend class detail::MoveVertex;
+	// oriented operations
+	template <class G> friend class detail::MergeVertex;
+	template <class G> friend class detail::SplitVertex;
+	template <class G> friend class detail::CollapseEdge;
+	template <class G> friend class detail::SubdivideEdge;
 
-  public:	
-
+  public:
 	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex_handle = Vertex*;
 	using Vertex_const_handle = const Vertex*;
@@ -42,9 +53,9 @@ class Graph_2 {
 	using Point_2 = CurveTraits::Point_2;
 	using Curve_2 = CurveTraits::Curve_2;
 	using Curve_representation = CurveTraits::Curve_representation_2;
-	
+
 	using Graph_traits = GraphTraits;
-	using History = std::conditional<GraphTraits::historic, History, std::monostate>::type;
+	using History = std::conditional<GraphTraits::historic, History, NoHistory>::type;
 
   private:
 	using Vertex_container = std::vector<Vertex_handle>;
@@ -64,6 +75,75 @@ class Graph_2 {
 
 	std::vector<Graph_map_base*> m_vertex_maps;
 	std::vector<Graph_map_base*> m_edge_maps;
+	std::vector<Graph_map_base*> m_path_maps;
+
+	void insert_vertex_into_container(Vertex_handle v) {
+
+		const size_t index = v->graph_index();
+		if (index == m_vertices.size()) {
+			m_vertices.push_back(v);
+			for (Graph_map_base* m : m_vertex_maps) {
+				m->add_index();
+			}
+		} else {
+			m_vertices.push_back(m_vertices[index]);
+			m_vertices[index] = v;
+			for (Graph_map_base* m : m_vertex_maps) {
+				m->add_index(index);
+			}
+		}
+	}
+
+	void remove_vertex_from_container(Vertex_handle v) {
+		const size_t index = v->m_index;
+		const size_t last = m_vertices.size() - 1;
+		if (index != last) {
+			m_vertices[index] = m_vertices[last];
+			m_vertices[index]->m_index = index;
+			for (Graph_map_base* m : m_vertex_maps) {
+				m->remove_index(index);
+			}
+		} else {
+			for (Graph_map_base* m : m_vertex_maps) {
+				m->remove_last_index();
+			}
+		}
+		m_vertices.pop_back();
+	}
+
+	void insert_edge_into_container(Edge_handle e) {
+		const size_t index = e->graph_index();
+		if (index == m_edges.size()) {
+			m_edges.push_back(e);
+			for (Graph_map_base* m : m_edge_maps) {
+				m->add_index();
+			}
+		} else {
+			m_edges.push_back(m_edges[index]);
+			m_edges[index] = e;
+			for (Graph_map_base* m : m_edge_maps) {
+				m->add_index(index);
+			}
+		}
+	}
+
+	void remove_edge_from_container(Edge_handle e) {
+		const size_t graph_index = e->m_index;
+		const size_t last = m_edges.size() - 1;
+		if (graph_index != last) {
+			m_edges[graph_index] = m_edges[last];
+			m_edges[graph_index]->m_index = graph_index;
+
+			for (Graph_map_base* m : m_edge_maps) {
+				m->remove_index(graph_index);
+			}
+		} else {
+			for (Graph_map_base* m : m_edge_maps) {
+				m->remove_last_index();
+			}
+		}
+		m_edges.pop_back();
+	}
 
 	inline void ensure_traits(Vertex_handle v) {
 		if constexpr (GraphTraits::oriented) {
@@ -164,7 +244,7 @@ class Graph_2 {
 		}
 	}
 	bool verify_sorted() const {
-		for (const Vertex_const_handle v : m_vertices) {
+		for (Vertex_const_handle v : m_vertices) {
 			if (v->degree() > 2) {
 				CGAL::Direction_2<Kernel> dir_prev =
 				    CGAL::Direction_2<Kernel>(v->neighbor(0)->m_point - v->m_point);
@@ -181,6 +261,139 @@ class Graph_2 {
 		return true;
 	}
 
+	// ---- ONLY WHEN GraphTraits::decomposed -------------------------------- //
+  public:
+	using Path = std::conditional<GraphTraits::decomposed,
+	                              Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>,
+	                              std::monostate>::type;
+	using Path_handle = Path*;
+	using Path_const_handle = const Path*;
+
+	using Path_data = GraphTraits::PathData;
+
+  private:
+	using Path_container = std::vector<Path_handle>;
+
+	Path_container m_paths;
+
+	void ensure_decomposed() requires GraphTraits::decomposed {
+		for (Edge_handle e : m_edges) {
+			if (e->m_path != nullptr)
+				continue; // already handled
+
+			Path_handle p = new Path(e, m_paths.size());
+			m_paths.push_back(p);
+
+			e->m_path = p;
+
+			if (e->m_source->degree() == 2) {
+				//NB: we check first whether we can move at all so we can detect a cycle from the start pointer
+
+				do {
+					p->m_start = p->m_start->prev();
+					p->m_start->m_path = p;
+				} while (p->m_start->m_source->degree() == 2 && p->m_start != e);
+
+				if (p->m_start == e) {
+					p->m_cyclic = true;
+					p->m_end = e->prev();
+					continue; // cycle done, continues mainloop
+				}
+			}
+
+			while (p->m_end->m_target->degree() == 2) {
+				p->m_end = p->m_end->next();
+				p->m_end->m_path = p;
+			}
+		}
+
+		assert(verify_decomposed());
+	}
+	bool verify_decomposed() const requires GraphTraits::decomposed {
+		for (Edge_handle e : m_edges) {
+			if (e->m_path == nullptr) {
+				return false;
+			}
+
+			if (e->source()->degree() == 2 && e->prev()->m_path != e->m_path) {
+				return false;
+			}
+			if (e->target()->degree() == 2 && e->next()->m_path != e->m_path) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+  public:
+	using Path_iterator = Path_container::iterator;
+	using Path_const_iterator = Path_container::const_iterator;
+
+	class Path_range {
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
+	  private:
+		Path_container& m_container;
+
+		Path_range(Path_container& container) : m_container(container) {}
+
+	  public:
+		Path_iterator begin() const {
+			return m_container.begin();
+		}
+
+		Path_iterator end() const {
+			return m_container.end();
+		}
+	};
+
+	class Path_const_range {
+		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
+	  private:
+		const Path_container& m_container;
+
+		Path_const_range(const Path_container& container) : m_container(container) {}
+
+	  public:
+		Path_const_iterator begin() const {
+			return m_container.cbegin();
+		}
+
+		Path_const_iterator end() const {
+			return m_container.cend();
+		}
+	};
+
+	size_t number_of_paths() const requires GraphTraits::decomposed {
+		return m_paths.size();
+	}
+	Path_handle path(size_t index) requires GraphTraits::decomposed {
+		return m_paths[index];
+	}
+	Path_const_handle path(size_t index) const requires GraphTraits::decomposed {
+		return m_paths[index];
+	}
+	Path_range paths() requires GraphTraits::decomposed {
+		return Path_range(m_paths);
+	}
+	Path_const_range paths() const requires GraphTraits::decomposed {
+		return Path_const_range(m_paths);
+	}
+	Path_iterator paths_begin() requires GraphTraits::decomposed {
+		return m_paths.begin();
+	}
+	Path_iterator paths_end() requires GraphTraits::decomposed {
+		return m_paths.end();
+	}
+	Path_const_iterator paths_begin() const requires GraphTraits::decomposed {
+		return m_paths.cbegin();
+	}
+	Path_const_iterator paths_end() const requires GraphTraits::decomposed {
+		return m_paths.cend();
+	}
+
+	// ----Vertex/edge maps --------------------------------------------------- //
 	void add_vertex_map(Graph_map_base* map) {
 		m_vertex_maps.push_back(map);
 	}
@@ -200,6 +413,17 @@ class Graph_2 {
 		auto pos = std::find(m_edge_maps.begin(), m_edge_maps.end(), map);
 		if (pos != m_edge_maps.end()) {
 			m_edge_maps.erase(pos);
+		}
+	}
+
+	void add_path_map(Graph_map_base* map) requires GraphTraits::decomposed {
+		m_path_maps.push_back(map);
+	}
+
+	void remove_path_map(Graph_map_base* map) requires GraphTraits::decomposed {
+		auto pos = std::find(m_path_maps.begin(), m_path_maps.end(), map);
+		if (pos != m_path_maps.end()) {
+			m_path_maps.erase(pos);
 		}
 	}
 
@@ -326,6 +550,26 @@ class Graph_2 {
 			}
 		}
 
+		if constexpr (GraphTraits::decomposed) {
+			const size_t num_p = other.number_of_paths();
+			m_paths.resize(num_p);
+			for (Graph_map_base* m : m_path_maps) {
+				m->resize(num_p);
+			}
+
+			Graph_static_path_map<Graph_2, Path_handle> pmap(other, nullptr);
+
+			for (auto pit : other.paths()) {
+				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclc,
+				                             pit->m_index, pit->m_data);
+				m_paths[new_p->m_index] = new_p;
+			}
+
+			for (auto eit : other.edges()) {
+				emap[eit]->m_path = pmap[eit->m_path];
+			}
+		}
+
 		return *this;
 	}
 
@@ -341,6 +585,11 @@ class Graph_2 {
 		}
 		for (Edge_handle e : m_edges) {
 			delete e;
+		}
+		if constexpr (GraphTraits::decomposed) {
+			for (Path_handle p : m_paths) {
+				delete p;
+			}
 		}
 	}
 
@@ -368,8 +617,10 @@ class Graph_2 {
 			Vertex_handle new_source = vmap[eit->m_source];
 			Vertex_handle new_target = vmap[eit->m_target];
 
-			Edge_handle new_e = new Edge(new_source, new_target,
-			                             Curve_traits::transform(trans, new_source, new_target, eit->m_representation), eit->m_data);
+			Edge_handle new_e = new Edge(
+			    new_source, new_target,
+			    Curve_traits::transform(trans, new_source, new_target, eit->m_representation),
+			    eit->m_data);
 			new_e->m_index = eit->m_index;
 			transformed.m_edges[eit->m_index] = new_e;
 
@@ -383,6 +634,22 @@ class Graph_2 {
 			}
 		}
 
+		if constexpr (GraphTraits::decomposed) {
+			transformed.m_paths.resize(number_of_paths());
+
+			Graph_static_path_map<Graph_2, Path_handle> pmap(this, nullptr);
+
+			for (auto pit : paths()) {
+				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclc,
+				                             pit->m_index, pit->m_data);
+				transformed.m_paths[new_p->m_index] = new_p;
+			}
+
+			for (auto eit : edges()) {
+				emap[eit]->m_path = pmap[eit->m_path];
+			}
+		}
+
 		return transformed;
 	}
 
@@ -393,6 +660,9 @@ class Graph_2 {
 					ensure_traits(v);
 				}
 			}
+			if constexpr (GraphTraits::decomposed) {
+				ensure_decomposed();
+			}
 			m_initialized = true;
 		}
 	}
@@ -402,6 +672,15 @@ class Graph_2 {
 		return m_initialized;
 	}
 
+	size_t number_of_vertices() const {
+		return m_vertices.size();
+	}
+	Vertex_handle vertex(size_t index) {
+		return m_vertices[index];
+	}
+	Vertex_const_handle vertex(size_t index) const {
+		return m_vertices[index];
+	}
 	Vertex_range vertices() {
 		return Vertex_range(m_vertices);
 	}
@@ -414,7 +693,22 @@ class Graph_2 {
 	Vertex_iterator vertices_end() {
 		return m_vertices.end();
 	}
+	Vertex_const_iterator vertices_begin() const {
+		return m_vertices.cbegin();
+	}
+	Vertex_const_iterator vertices_end() const {
+		return m_vertices.cend();
+	}
 
+	size_t number_of_edges() const {
+		return m_edges.size();
+	}
+	Edge_handle edge(size_t index) {
+		return m_edges[index];
+	}
+	Edge_const_handle edge(size_t index) const {
+		return m_edges[index];
+	}
 	Edge_range edges() {
 		return Edge_range(m_edges);
 	}
@@ -427,13 +721,6 @@ class Graph_2 {
 	Edge_iterator edges_end() {
 		return m_edges.end();
 	}
-
-	Vertex_const_iterator vertices_begin() const {
-		return m_vertices.cbegin();
-	}
-	Vertex_const_iterator vertices_end() const {
-		return m_vertices.cend();
-	}
 	Edge_const_iterator edges_begin() const {
 		return m_edges.cbegin();
 	}
@@ -441,19 +728,20 @@ class Graph_2 {
 		return m_edges.cend();
 	}
 
-	size_t number_of_vertices() const {
-		return m_vertices.size();
-	}
-	size_t number_of_edges() const {
-		return m_edges.size();
-	}
-
 	void clear() {
 		for (Vertex_handle v : m_vertices) {
 			delete v;
 		}
+		m_vertices.clear();
 		for (Edge_handle e : m_edges) {
 			delete e;
+		}
+		m_edges.clear();
+		if constexpr (GraphTraits::decomposed) {
+			for (Path_handle p : m_paths) {
+				delete p;
+			}
+			m_paths.clear();
 		}
 		if constexpr (GraphTraits::historic) {
 			m_history.clear();
@@ -466,38 +754,37 @@ class Graph_2 {
 		}
 	}
 
-	Vertex_handle add_vertex(Point_2 p) {
-		Vertex_handle v = new Vertex(p);
-		AddVertex<Graph_2>::add_vertex(*this, v);
+	History& history() requires GraphTraits::historic {
+		return m_history;
+	}
 
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<AddVertex<Graph_2>>(*this, v));
-			}
+	Vertex_handle add_vertex(Point_2 p) {
+
+		Vertex_handle v = new Vertex(p, m_vertices.size());
+
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::AddVertex<Graph_2>>(*this, v);
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::AddVertex<Graph_2>::add_vertex(*this, v);
 		}
 
 		return v;
 	}
 	void remove_vertex(Vertex_handle v) {
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.start_group();
-			}
+
+		if constexpr (GraphTraits::decomposed) {
+			assert(!m_initialized); // not yet supported
 		}
 
-		while (!v->m_incident.empty()) {
-			remove_edge(v->m_incident.back());
-		}
-		RemoveVertex<Graph_2>::remove_vertex(*this, v);
-
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<RemoveVertex<Graph_2>>(*this, v));
-				m_history.end_group();
-			} else {
-				delete v;
-			}
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::RemoveVertex<Graph_2>>(*this, v);
+			op->redo();
+			m_history.add_operation(std::move(op));
+			m_history.end_group();
 		} else {
+			detail::RemoveVertex<Graph_2>::remove_vertex(*this, v);
 			delete v;
 		}
 	}
@@ -507,39 +794,51 @@ class Graph_2 {
 	}
 
 	Edge_handle add_edge(Vertex_handle source, Vertex_handle target, const Curve_2& curve) {
-		Edge_handle e = new Edge(source, target, m_edges.size(), curve);
-		
-		AddEdge<Graph_2>::add_edge(*this, e);
 
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<AddEdge<Graph_2>>(*this, e));
-			}
+		if constexpr (GraphTraits::decomposed) {
+			assert(!m_initialized); // not yet supported
+		}
+
+		Edge_handle e = new Edge(source, target, m_edges.size(), curve);
+
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::AddEdge<Graph_2>>(*this, e);
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::AddEdge<Graph_2>::add_edge(*this, e);
 		}
 
 		return e;
 	}
 	void remove_edge(Edge_handle e) {
-		RemoveEdge<Graph_2>::remove_edge(*this, e);
 
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<RemoveEdge<Graph_2>>(*this, e));
-			} else {
-				delete e;
-			}
+		if constexpr (GraphTraits::decomposed) {
+			assert(!m_initialized); // not yet supported
+		}
+
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::RemoveEdge<Graph_2>>(*this, e);
+			op->redo();
+			m_history.add_operation(std::move(op));
 		} else {
+			detail::RemoveEdge<Graph_2>::remove_edge(*this, e);
 			delete e;
 		}
 	}
 
 	void change_curve(Edge_handle e, Curve_representation new_rep) {
-		e->m_representation = new_rep;
 
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<ChangeCurve<Graph_2>>(e, new_rep));
-			}
+		if constexpr (GraphTraits::sorted) {
+			assert(!m_initialized); // not yet supported
+		}
+
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::ChangeCurve<Graph_2>>(e, new_rep);
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::ChangeCurve<Graph_2>::change_curve(e, new_rep);
 		}
 	}
 
@@ -547,30 +846,39 @@ class Graph_2 {
 		change_curve(e, Curve_traits::representation(new_curve));
 	}
 
-	void move_vertex(Vertex_handle v, Point_2 p,
-					 std::optional<std::function<typename CurveTraits::Curve_representation_2(Edge_const_handle)>> e_to_rep = std::nullopt) {
+	void move_vertex(
+	    Vertex_handle v, Point_2 p,
+	    std::optional<std::function<typename CurveTraits::Curve_representation_2(Edge_const_handle)>>
+	        e_to_rep = std::nullopt) {
+
+		if constexpr (GraphTraits::sorted) {
+			assert(!m_initialized); // not yet supported
+		}
+
+		if (GraphTraits::historic && m_initialized) {
+			m_history.start_group();
+		}
+
 		for (auto eh : v->incident_edges()) {
 			if (e_to_rep.has_value()) {
 				change_curve(eh, (*e_to_rep)(eh));
 			} else {
-				auto new_representation = eh->source() == v
-				    ? Curve_traits::move_start(p, eh->target()->point(), eh->representation())
-				    : Curve_traits::move_end(eh->source()->point(), p, eh->representation());
+				auto new_representation =
+				    eh->source() == v
+				        ? Curve_traits::move_start(p, eh->target()->point(), eh->representation())
+				        : Curve_traits::move_end(eh->source()->point(), p, eh->representation());
 				change_curve(eh, std::move(new_representation));
 			}
 		}
-		
-		v->m_point = p;
 
-		if constexpr (GraphTraits::historic) {
-			if (m_initialized) {
-				m_history.add_operation(std::make_unique<MoveVertex<Graph_2>>(v, p));
-			}
+		if (GraphTraits::historic && m_initialized) {
+			auto op = std::make_unique<detail::MoveVertex<Graph_2>>(v, p);
+			op->redo();
+			m_history.add_operation(std::move(op));
+			m_history.end_group();
+		} else {
+			detail::MoveVertex<Graph_2>::move_vertex(v, p);
 		}
-	}
-
-	History& history() requires GraphTraits::historic {
-		return m_history;
 	}
 
 	Edge_handle
@@ -589,34 +897,33 @@ class Graph_2 {
 		assert(c0.target() == c1.source());
 		assert(c1.target() == c2.source());
 
-		if constexpr (GraphTraits::historic) {
-			m_history.start_group();
+		Vertex_handle new_v = new Vertex(c1.target(), m_vertices.size());
+		Edge_handle new_e = new Edge(v, new_v, m_edges.size(), c1);
+		if constexpr (GraphTraits::decomposed) {
+			new_e->m_path = v->outgoing()->m_path;
 		}
-
-		auto e0 = v->incoming();
-		auto v0 = e0->source();
-		auto e1 = v->outgoing();
-		auto v3 = e1->target();
-		remove_edge(e0);
-		remove_edge(e1);
-		remove_vertex(v);
-		auto v1 = add_vertex(c0.target());
-		auto v2 = add_vertex(c1.target());
-		add_edge(v0, v1, c0);
-		auto eh = add_edge(v1, v2, c1);
-		add_edge(v2, v3, c2);
+		new_v->add_incident(new_e);
+		new_v->add_incident(v->outgoing());
 
 		if constexpr (GraphTraits::historic) {
-			m_history.end_group();
+			auto op = std::make_unique<detail::SplitVertex<Graph_2>>(
+			    *this, v, new_v, new_e, CurveTraits::representation(c0),
+			    CurveTraits::representation(c2));
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::SplitVertex<Graph_2>::split_vertex(*this, v, new_v, new_e,
+			                                           CurveTraits::representation(c0),
+			                                           CurveTraits::representation(c2));
 		}
 
-		return eh;
+		return new_e;
 	}
 
 	Vertex_handle collapse_edge(Edge_handle e, Point_2 newPoint)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
-		return collapse_edge(e, Curve_2(e->prev()->m_point, newPoint),
-		                     Curve_2(newPoint, e->next()->m_point));
+		return collapse_edge(e, Curve_2(e->prev()->source()->m_point, newPoint),
+		                     Curve_2(newPoint, e->next()->target()->m_point));
 	}
 
 	/// Collapse an edge, removing it together with the edge that comes before and after it.
@@ -626,79 +933,62 @@ class Graph_2 {
 	                            Curve_2 fromNewPoint) requires GraphTraits::oriented {
 		assert(m_initialized);
 		assert(toNewPoint.target() == fromNewPoint.source());
-		Edge_handle prev = e->prev();
-		Edge_handle next = e->next();
-		Vertex_handle eSource = e->source();
-		Vertex_handle eTarget = e->target();
-		Vertex_handle prevSource = prev->source();
-		Vertex_handle nextTarget = next->target();
+		assert(e->source()->degree() == 2);
+		assert(e->target()->degree() == 2);
+
+		Vertex_handle result = e->source();
 
 		if constexpr (GraphTraits::historic) {
-			m_history.start_group();
+			auto op = std::make_unique<detail::CollapseEdge<Graph_2>>(
+			    *this, e, toNewPoint.target(), CurveTraits::representation(toNewPoint),
+			    CurveTraits::representation(fromNewPoint));
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::CollapseEdge<Graph_2>::collapse_edge(*this, e, toNewPoint.target(),
+			                                             CurveTraits::representation(toNewPoint),
+			                                             CurveTraits::representation(fromNewPoint));
 		}
 
-		// todo: reuse edge/vertex objects and move them
-
-		// Remove old edges and vertices
-		remove_edge(e);
-		remove_edge(prev);
-		remove_edge(next);
-		remove_vertex(eSource);
-		remove_vertex(eTarget);
-
-		// Add new vertex
-		auto v = add_vertex(toNewPoint.target());
-		// Add the two new edges
-		auto eh1 = add_edge(prevSource, v, toNewPoint);
-		auto eh2 = add_edge(v, nextTarget, fromNewPoint);
-
-		if constexpr (GraphTraits::historic) {
-			m_history.end_group();
-		}
-
-		return v;
+		return result;
 	}
 
-	Edge_handle merge_edge_with_prev(
-	    Edge_handle e) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
-		return merge_edge_with_prev(e, Curve_2());
+	Edge_handle merge_vertex(
+	    Vertex_handle v) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return merge_vertex(v, Curve_2(v->prev()->point(), v->next()->point()));
 	}
 
 	/// Merge an edge with the one that precedes it and replace them with newCurve.
 	/// Returns the handle of the new edge.
 	/// \pre Source vertex of edge e has degree 2.
-	Edge_handle merge_edge_with_prev(Edge_handle e, Curve_2 newCurve) requires GraphTraits::oriented {
+	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve) requires GraphTraits::oriented {
 		assert(m_initialized);
-		assert(e->source()->degree() != 2);
-		Edge_handle prev = e->prev();
+		assert(v->degree() == 2);
+		assert(!v->prev().is_neighbor_of(v->next()));
 
-		Vertex_handle u = prev->source();
-		Vertex_handle v = e->target();
-
-		// todo: reuse edge/vertex objects and move them
-		if constexpr (GraphTraits::historic) {
-			m_history.start_group();
+		if constexpr (GraphTraits::sorted) {
+			assert(!m_initialized); // not yet supported
 		}
 
-		// Remove old edges and vertices
-		remove_edge(e);
-		remove_edge(prev);
-		remove_vertex(e->source());
-
-		// Add new edge
-		auto eh = add_edge(u, v, newCurve);
+		Edge_handle result = v->incoming();
 
 		if constexpr (GraphTraits::historic) {
-			m_history.end_group();
+			auto op = std::make_unique<detail::MergeVertex<Graph_2>>(
+			    *this, v, CurveTraits::representation(newCurve));
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::MergeVertex<Graph_2>::merge_vertex(*this, v,
+			                                           CurveTraits::representation(newCurve));
 		}
 
-		return eh;
+		return result;
 	}
 
 	Vertex_handle subdivide_edge(Edge_handle e, Point_2 newPoint)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
-		return subdivide_edge(e, Curve_2(e->prev()->m_point),
-		                      Curve_2(newPoint, e->m_target->m_point));
+		return subdivide_edge(e, Curve_2(e->source()->m_point, newPoint),
+		                      Curve_2(newPoint, e->target()->m_point));
 	}
 
 	/// Replace an edge by two edges
@@ -708,22 +998,25 @@ class Graph_2 {
 		assert(m_initialized);
 		assert(toNewPoint.target() == fromNewPoint.source());
 
-		if constexpr (GraphTraits::historic) {
-			m_history.start_group();
+		Vertex_handle new_v = new Vertex(toNewPoint.target(), m_vertices.size());
+		Edge_handle new_e = new Edge(new_v, e->target(), m_edges.size(), fromNewPoint);
+		if constexpr (GraphTraits::decomposed) {
+			new_e->m_path = e->m_path;
 		}
-
-		auto s = e->source();
-		auto t = e->target();
-		remove_edge(e);
-		auto vh = add_vertex(toNewPoint.target());
-		add_edge(s, vh, toNewPoint);
-		add_edge(vh, t, fromNewPoint);
+		new_v->add_incident(e);
+		new_v->add_incident(new_e);
 
 		if constexpr (GraphTraits::historic) {
-			m_history.end_group();
+			auto op = std::make_unique<detail::SubdivideEdge<Graph_2>>(
+			    *this, e, new_e, CurveTraits::representation(toNewPoint));
+			op->redo();
+			m_history.add_operation(std::move(op));
+		} else {
+			detail::SubdivideEdge<Graph_2>::subdivide_edge(*this, e, new_e,
+			                                               CurveTraits::representation(toNewPoint));
 		}
 
-		return vh;
+		return new_v;
 	}
 
 	CGAL::Bbox_2 bbox() const {
@@ -745,7 +1038,7 @@ class Graph_2 {
 	}
 
 	CGAL::Iso_rectangle_2<Kernel> bounding_rectangle() const {
-		
+
 		typename Kernel::FT left = 0, right = 0, bottom = 0, top = 0;
 
 		bool first = true;
@@ -781,20 +1074,32 @@ class Graph_2_vertex {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
-	template <class G> friend class AddEdge;
-	template <class G> friend class RemoveEdge;
-	template <class G> friend class AddVertex;
-	template <class G> friend class RemoveVertex;
+	// basic operations
+	template <class G> friend class detail::AddVertex;
+	template <class G> friend class detail::RemoveVertex;
+	template <class G> friend class detail::AddEdge;
+	template <class G> friend class detail::RemoveEdge;
+	// geometric operations
+	template <class G> friend class detail::ChangeCurve;
+	template <class G> friend class detail::MoveVertex;
+	// oriented operations
+	template <class G> friend class detail::MergeVertex;
+	template <class G> friend class detail::SplitVertex;
+	template <class G> friend class detail::CollapseEdge;
+	template <class G> friend class detail::SubdivideEdge;
 
   public:
 	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
-	using Edge = Graph::Edge;	
+	using Edge = Graph::Edge;
 	using Edge_handle = Graph::Edge_handle;
 	using Edge_const_handle = Graph::Edge_const_handle;
-	
+	using Path = Graph::Path;
+	using Path_handle = Graph::Path_handle;
+	using Path_const_handle = Graph::Path_const_handle;
+
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
 
@@ -811,16 +1116,34 @@ class Graph_2_vertex {
 	Vertex_data m_data;
 	size_t m_index;
 
-	void remove_incident(Edge_handle e) {
-		auto pos = std::find(m_incident.begin(), m_incident.end(), e);
-		if (pos != m_incident.end()) {
-			m_incident.erase(pos);
-		}
+	void remove_incident(const size_t index) {
+		m_incident.erase(std::next(m_incident.begin(), index));
 	}
 
-	Graph_2_vertex(const Point_2 point) : m_point(std::move(point)) {}
-	Graph_2_vertex(const Point_2 point, const Vertex_data data)
-	    : m_point(std::move(point)), m_data(std::move(data)) {}
+	size_t find_incident_index(Edge_const_handle e) const {
+		size_t index = degree() - 1;
+		while (index >= 0 && m_incident[index] != e) {
+			--index;
+		}
+		return index;
+	}
+
+	void remove_incident(Edge_handle e) {
+		remove_incident(find_incident_index(e));
+	}
+
+	void insert_incident(Edge_handle e, const size_t index) {
+		m_incident.insert(std::next(m_incident.begin(), index), e);
+	}
+
+	void add_incident(Edge_handle e) {
+		m_incident.push_back(e);
+	}
+
+	Graph_2_vertex(const Point_2 point, const size_t index)
+	    : m_point(std::move(point)), m_index(std::move(index)) {}
+	Graph_2_vertex(const Point_2 point, const size_t index, const Vertex_data data)
+	    : m_point(std::move(point)), m_index(std::move(index)), m_data(std::move(data)) {}
 
   public:
 	size_t graph_index() const {
@@ -941,20 +1264,34 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, Grap
 class Graph_2_edge {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>;
 
-	template <class G> friend class AddEdge;
-	template <class G> friend class RemoveEdge;
-	template <class G> friend class ChangeCurve;
+	// basic operations
+	template <class G> friend class detail::AddVertex;
+	template <class G> friend class detail::RemoveVertex;
+	template <class G> friend class detail::AddEdge;
+	template <class G> friend class detail::RemoveEdge;
+	// geometric operations
+	template <class G> friend class detail::ChangeCurve;
+	template <class G> friend class detail::MoveVertex;
+	// oriented operations
+	template <class G> friend class detail::MergeVertex;
+	template <class G> friend class detail::SplitVertex;
+	template <class G> friend class detail::CollapseEdge;
+	template <class G> friend class detail::SubdivideEdge;
 
   public:
 	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
-	using Edge = Graph::Edge;	
+	using Edge = Graph::Edge;
 	using Edge_handle = Graph::Edge_handle;
 	using Edge_const_handle = Graph::Edge_const_handle;
-	
+	using Path = Graph::Path;
+	using Path_handle = Graph::Path_handle;
+	using Path_const_handle = Graph::Path_const_handle;
+
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
 
@@ -970,6 +1307,7 @@ class Graph_2_edge {
 	Curve_representation m_representation;
 	size_t m_index;
 	Edge_data m_data;
+	Path_handle m_path = nullptr;
 
 	Graph_2_edge(Vertex_handle source, Vertex_handle target,
 	             const size_t index) requires std::same_as<Curve_representation, std::monostate>
@@ -1000,6 +1338,29 @@ class Graph_2_edge {
 	Vertex_const_handle target() const {
 		return m_target;
 	}
+	Path_handle path() requires GraphTraits::decomposed {
+		return m_path;
+	}
+	Path_const_handle path() const requires GraphTraits::decomposed {
+		return m_path;
+	}
+	Edge_data& data() {
+		return m_data;
+	}
+	const Edge_data& data() const {
+		return m_data;
+	}
+
+	size_t find_source_incident_index() const {
+		return m_source->find_incident_index(this);
+	}
+	size_t find_target_incident_index() const {
+		return m_target->find_incident_index(this);
+	}
+	size_t find_other_incident_index(Vertex_const_handle v) const {
+		return other(v)->find_incident_index(this);
+	}
+
 	Vertex_handle other(Vertex_handle v) {
 		assert(v == m_source || v == m_target);
 		return v == m_source ? m_target : m_source;
@@ -1032,6 +1393,81 @@ class Graph_2_edge {
 	}
 	Edge_const_handle next() const requires GraphTraits::oriented {
 		return m_target->outgoing();
+	}
+};
+
+template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+class Graph_2_path {
+	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
+	// basic operations
+	template <class G> friend class detail::AddVertex;
+	template <class G> friend class detail::RemoveVertex;
+	template <class G> friend class detail::AddEdge;
+	template <class G> friend class detail::RemoveEdge;
+	// geometric operations
+	template <class G> friend class detail::ChangeCurve;
+	template <class G> friend class detail::MoveVertex;
+	// oriented operations
+	template <class G> friend class detail::MergeVertex;
+	template <class G> friend class detail::SplitVertex;
+	template <class G> friend class detail::CollapseEdge;
+	template <class G> friend class detail::SubdivideEdge;
+
+  public:
+	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Vertex = Graph::Vertex;
+	using Vertex_handle = Graph::Vertex_handle;
+	using Vertex_const_handle = Graph::Vertex_const_handle;
+	using Edge = Graph::Edge;
+	using Edge_handle = Graph::Edge_handle;
+	using Edge_const_handle = Graph::Edge_const_handle;
+	using Path = Graph::Path;
+	using Path_handle = Graph::Path_handle;
+	using Path_const_handle = Graph::Path_const_handle;
+
+	using Vertex_data = VertexData;
+	using Edge_data = EdgeData;
+	using Path_data = GraphTraits::PathData;
+
+	using Curve_traits = CurveTraits;
+	using Kernel = CurveTraits::Kernel;
+	using Point_2 = CurveTraits::Point_2;
+	using Curve_2 = CurveTraits::Curve_2;
+	using Curve_representation = CurveTraits::Curve_representation_2;
+
+  private:
+	Edge_handle m_start, m_end;
+	bool m_cyclic;
+	size_t m_index;
+	Path_data m_data;
+
+	Graph_2_path(Edge_handle src, size_t index)
+	    : m_start(src), m_end(src), m_cyclic(false), m_index(index) {}
+
+	Graph_2_path(Edge_handle start, Edge_handle end, bool cyclic, size_t index, Path_data data)
+	    : m_start(start), m_end(end), m_cyclic(cyclic), m_index(index), m_data(data) {}
+
+  public:
+	Edge_handle start() {
+		return m_start;
+	}
+	Edge_handle end() {
+		return m_end;
+	}
+	size_t graph_index() const {
+		return m_index;
+	}
+	bool cyclic() const {
+		return m_cyclic;
+	}
+	Path_data& data() {
+		return m_data;
+	}
+	const Path_data& data() const {
+		return m_data;
 	}
 };
 
