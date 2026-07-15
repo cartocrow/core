@@ -531,7 +531,7 @@ class Graph_2 {
 		Graph_static_vertex_map<Graph_2, Vertex_handle> vmap(other, nullptr);
 
 		for (auto vit : other.vertices()) {
-			Vertex_handle new_v = new Vertex(vit->m_point, vit->m_data);
+			Vertex_handle new_v = new Vertex(vit->m_point, vit->m_index, vit->m_data);
 			new_v->m_index = vit->m_index;
 			m_vertices[vit->m_index] = new_v;
 
@@ -568,7 +568,7 @@ class Graph_2 {
 			Graph_static_path_map<Graph_2, Path_handle> pmap(other, nullptr);
 
 			for (auto pit : other.paths()) {
-				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclc,
+				Path_handle new_p = new Path(emap[pit->m_start], emap[pit->m_end], pit->m_cyclic,
 				                             pit->m_index, pit->m_data);
 				m_paths[new_p->m_index] = new_p;
 			}
@@ -873,10 +873,13 @@ class Graph_2 {
 			if (e_to_rep.has_value()) {
 				change_curve(eh, (*e_to_rep)(eh));
 			} else {
-				auto new_representation =
-				    eh->source() == v
-				        ? Curve_traits::move_start(p, eh->target()->point(), eh->representation())
-				        : Curve_traits::move_end(eh->source()->point(), p, eh->representation());
+				auto new_representation = eh->representation();
+				if (eh->source() == v) {
+					Curve_traits::move_start(p, eh->target()->point(), new_representation);
+				} else {
+					Curve_traits::move_end(eh->source()->point(), p, new_representation);
+				}
+
 				change_curve(eh, std::move(new_representation));
 			}
 		}

@@ -352,7 +352,6 @@ template <class G> class ChangeCurve : public Operation {
 	using Edge_handle = G::Edge_handle;
 	using Curve_representation = typename G::Curve_traits::Curve_representation_2;
 
-	G& m_graph;
 	Edge_handle m_edge;
 	Curve_representation m_representation;
 
@@ -427,7 +426,7 @@ template <class G> class MergeVertex : public Operation {
 		// redirect v.incoming to v.next
 		Vertex_handle target = outgoing->target();
 		target->m_incident[index] = incoming;
-		incoming->target = target;
+		incoming->m_target = target;
 
 		// update paths
 		if constexpr (G::Graph_traits::decomposed) {
@@ -475,11 +474,11 @@ template <class G> class MergeVertex : public Operation {
 		std::swap(incoming->m_representation, m_curve_rep);
 
 		// redirect v.incoming to v
-		incoming->target = m_vertex;
+		incoming->m_target = m_vertex;
 
 		// add v and v.outgoing to graph
-		m_graph.add_vertex_to_container(m_vertex);
-		m_graph.add_edge_to_container(outgoing);
+		m_graph.insert_vertex_into_container(m_vertex);
+		m_graph.insert_edge_into_container(outgoing);
 
 		outgoing->target()->m_incident[m_index] = outgoing;
 
