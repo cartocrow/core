@@ -21,6 +21,8 @@ class Graph_2 {
 	template <typename G, typename T> friend class Graph_vertex_map;
 	template <typename G, typename T> friend class Graph_edge_map;
 	template <typename G, typename T> friend class Graph_path_map;
+	template <class InGraph, class OutGraph>
+	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -87,7 +89,7 @@ class Graph_2 {
 			}
 		} else {
 			m_vertices[index]->m_index = m_vertices.size();
-			m_vertices.push_back(m_vertices[index]);			
+			m_vertices.push_back(m_vertices[index]);
 			m_vertices[index] = v;
 			for (Graph_map_base* m : m_vertex_maps) {
 				m->add_index(index);
@@ -736,7 +738,7 @@ class Graph_2 {
 		return m_edges.cend();
 	}
 
-	void clear() {
+	void clear(bool clear_init = false) {
 		for (Vertex_handle v : m_vertices) {
 			delete v;
 		}
@@ -762,6 +764,7 @@ class Graph_2 {
 			m->clear();
 		}
 		m_edge_maps.clear();
+		m_initialized = !m_initialized || clear_init;
 	}
 
 	History& history() requires GraphTraits::historic {
@@ -1086,6 +1089,8 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, Grap
 class Graph_2_vertex {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	template <class InGraph, class OutGraph>
+	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1278,6 +1283,8 @@ class Graph_2_edge {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	template <class InGraph, class OutGraph>
+	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1416,6 +1423,8 @@ class Graph_2_path {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	template <class InGraph, class OutGraph>
+	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1485,5 +1494,37 @@ class Graph_2_path {
 		return m_data;
 	}
 };
+
+template <class InGraph, class OutGraph>
+//requires std::is_same<typename InGraph::Curve_traits, typename OutGraph::Curve_traits> 
+void
+graph_2_copy(InGraph& input, OutGraph& output, bool initialize = true) {
+
+	using InVertex = InGraph::Vertex_handle;
+	using InEdge = InGraph::Edge_handle;
+	using OutVertex = OutGraph::Vertex_handle;
+	using OutEdge = OutGraph::Edge_handle;
+
+	output.clear(true);
+
+	for (InVertex v : input.vertices()) {
+		output.m_vertices.push_back(new OutGraph::Vertex(v->point(), output.m_vertices.size()));
+	}
+	for (InEdge e : input.edges()) {
+		output.m_edges.push_back(new OutGraph::Edge(output.m_vertices[e->source()->graph_index()],
+		                                            output.m_vertices[e->target()->graph_index()],
+		                                            output.m_edges.size(), e->m_representation));
+	}
+	for (OutVertex v : output.vertices()) {
+		InVertex in_v = input.m_vertices[v->graph_index()];
+		for (InEdge in_e : in_v->m_incident) {
+			v->m_incident.push_back(output.m_edges[in_e->graph_index()]);
+		}
+	}
+
+	if (initialize) {
+		output.initialize();
+	}
+}
 
 } // namespace cartocrow

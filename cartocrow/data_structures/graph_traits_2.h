@@ -57,6 +57,6 @@ template <bool H, typename PD> struct DecomposedGraph {
 	static constexpr bool decomposed = true;
 	using PathData= PD;
 };
-static_assert(GraphTraits_2<OrientedGraph<true>>);
+static_assert(GraphTraits_2<DecomposedGraph<true,std::monostate>>);
 
 } // namespace cartocrow

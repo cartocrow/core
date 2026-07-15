@@ -228,6 +228,34 @@ TEST_CASE("Graph operations") {
 	CHECK(g.is_initialized());
 	CHECK(g.number_of_vertices() == 3);
 	CHECK(g.number_of_edges() == 2);
+}
 
+TEST_CASE("Graph copy") {
 
+	using G1 = Straight_graph_2<std::monostate, std::monostate, Exact, OrientedGraph<false>>;
+	using V1 = G1::Vertex_handle;
+	using E1 = G1::Edge_handle;
+	using G2 = Straight_graph_2<std::monostate, std::monostate, Exact, DecomposedGraph<true, std::monostate>>;
+	using P = Point<Exact>;
+
+	G1 g;
+	V1 u = g.add_vertex(P(0, 0));
+	V1 v = g.add_vertex(P(1, 1));
+	V1 w = g.add_vertex(P(2, 0));
+
+	E1 e = g.add_edge(u, v);
+	E1 f = g.add_edge(v, w);
+
+	g.initialize();
+
+	CHECK(g.is_initialized());
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.number_of_edges() == 2);
+
+	G2 g2;
+	graph_2_copy(g, g2, true);
+
+	CHECK(g2.is_initialized());
+	CHECK(g2.number_of_vertices() == 3);
+	CHECK(g2.number_of_edges() == 2);
 }
