@@ -977,7 +977,7 @@ class Graph_2 {
 	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve) requires GraphTraits::oriented {
 		assert(m_initialized);
 		assert(v->degree() == 2);
-		assert(!v->prev().is_neighbor_of(v->next()));
+		assert(!v->prev()->is_neighbor_of(v->next()));
 
 		if constexpr (GraphTraits::sorted) {
 			assert(!m_initialized); // not yet supported

@@ -223,5 +223,11 @@ TEST_CASE("Graph operations") {
 	CHECK(g.number_of_vertices() == 4);
 	CHECK(g.number_of_edges() == 3);
 
+	g.merge_vertex(nv2);
+
+	CHECK(g.is_initialized());
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.number_of_edges() == 2);
+
 
 }

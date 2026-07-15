@@ -435,7 +435,6 @@ template <class G> class MergeVertex : public Operation {
 				assert(p->m_cyclic);
 				p->m_start = outgoing->next();
 			} else if (p->m_end == outgoing) {
-				assert(p->m_cyclic);
 				p->m_end = incoming;
 			}
 		}
