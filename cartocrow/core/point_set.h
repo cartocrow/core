@@ -20,5 +20,15 @@ struct PointSet {
 	}
 };
 
-PointSet<Inexact> approximate(const PointSet<Exact>& ps);
+
+template <typename KernelOut, typename KernelIn>
+PointSet<KernelOut> convert_kernel(const PointSet<KernelIn>& v) {
+	std::vector<Point<KernelOut>> result;
+
+	for (const auto& p : v.points) {
+		result.push_back(convert_kernel<KernelOut>(p));
+	}
+
+	return {result};
+}
 } // namespace cartocrow

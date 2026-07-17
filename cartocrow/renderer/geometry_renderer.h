@@ -158,9 +158,9 @@ class GeometryRenderer {
 	virtual void draw(const RenderPath& p) = 0;
 
 	/// Draws an exact geometry with the currently set style by approximating it.
-	template<class ExactGeometry>
-	void draw(const ExactGeometry& g) {
-		draw(approximate(g));
+	template<template<typename> class Geometry>
+	void draw(const Geometry<Exact>& g) {
+		draw(approximate<Exact,Geometry>(g));
 	};
 
 	/// Draws a string at a given location.

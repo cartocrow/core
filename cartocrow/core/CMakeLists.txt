@@ -6,12 +6,8 @@ set(SOURCES
 	rectangle_helpers.cpp
 	vector_helpers.cpp
 	transform_helpers.cpp
-	polyline.cpp
-	polyline_set.cpp
 	segment_delaunay_graph_helpers.cpp
 	stopwatch.cpp
-	polygon_set_raw.cpp
-	point_set.cpp
 )
 set(HEADERS
 	core.h

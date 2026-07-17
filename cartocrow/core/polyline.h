@@ -166,16 +166,13 @@ template <class K> class Polyline {
 	std::vector<CGAL::Point_2<K>> m_points;
 };
 
-/// Converts a polyline from exact representation to an approximation in
-/// inexact representation.
-template <class K>
-Polyline<Inexact> approximate(const Polyline<K>& p) {
-	Polyline<Inexact> result;
-	for (auto v = p.vertices_begin(); v < p.vertices_end(); ++v) {
-		result.push_back(approximate(*v));
+template <typename KernelOut, typename KernelIn>
+Polyline<KernelOut> convert_kernel(const Polyline<KernelIn>& v) {
+	Polyline<KernelOut> result;
+	for (auto p = v.vertices_begin(); p < v.vertices_end(); ++p) {
+		result.push_back(convert_kernel<KernelOut>(*p));
 	}
 	return result;
 }
 
-Polyline<Exact> pretendExact(const Polyline<Inexact>& p);
 }

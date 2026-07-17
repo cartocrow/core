@@ -38,5 +38,13 @@ struct PolylineSet {
    }
 };
 
-PolylineSet<Inexact> approximate(const PolylineSet<Exact>& pls);
+template <typename KernelOut, typename KernelIn>
+PolylineSet<KernelOut> convert_kernel(const PolylineSet<KernelIn>& v) {
+	PolylineSet<KernelOut> result;
+	for (const auto& p : v.polylines) {
+        result.polylines.push_back(convert_kernel<KernelOut>(*p));
+	}
+	return result;
+}
+
 }

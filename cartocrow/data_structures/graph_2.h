@@ -1496,7 +1496,7 @@ class Graph_2_path {
 };
 
 template <class InGraph, class OutGraph>
-//requires std::is_same<typename InGraph::Curve_traits, typename OutGraph::Curve_traits> 
+//requires std::is_same<typename InGraph::Curve_traits, typename OutGraph::Curve_traits>::value
 void
 graph_2_copy(InGraph& input, OutGraph& output, bool initialize = true) {
 
@@ -1508,7 +1508,8 @@ graph_2_copy(InGraph& input, OutGraph& output, bool initialize = true) {
 	output.clear(true);
 
 	for (InVertex v : input.vertices()) {
-		output.m_vertices.push_back(new OutGraph::Vertex(v->point(), output.m_vertices.size()));
+		output.m_vertices.push_back(new OutGraph::Vertex(
+			v->point(), output.m_vertices.size()));
 	}
 	for (InEdge e : input.edges()) {
 		output.m_edges.push_back(new OutGraph::Edge(output.m_vertices[e->source()->graph_index()],

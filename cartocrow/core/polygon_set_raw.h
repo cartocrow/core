@@ -29,6 +29,12 @@ struct PolygonSetRaw {
 	}
 };
 
-PolygonSetRaw<Inexact> approximate(const PolygonSetRaw<Exact>& pgs);
-PolygonSetRaw<Exact> pretendExact(const PolygonSetRaw<Inexact>& pgs);
+template <typename KernelOut, typename KernelIn>
+PolygonSetRaw<KernelOut> convert_kernel(const PolygonSetRaw<KernelIn>& v) {
+	PolygonSetRaw<KernelOut> result;
+	for (const auto& p : v.polygons_with_holes) {
+		result.polygons_with_holes.push_back(convert_kernel<KernelOut>(p));
+	}
+	return result;
+}
 }
