@@ -263,4 +263,5 @@ TEST_CASE("Graph copy") {
 
 	G3 g3;
 	graph_2_copy(g, g3);
+	graph_2_copy(g2, g3);
 }

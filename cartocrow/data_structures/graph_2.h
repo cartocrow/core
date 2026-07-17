@@ -1194,17 +1194,23 @@ class Graph_2_vertex {
 	const Point_2& point() const {
 		return m_point;
 	}
-	int degree() const {
+	size_t degree() const {
 		return m_incident.size();
 	}
-	Vertex_handle neighbor(int i) {
+	Edge_handle incident_edge(size_t i) {
+		return m_incident[i];
+	}
+	Edge_const_handle incident_edge(size_t i) const {
+		return m_incident[i];
+	}
+	Vertex_handle neighbor(size_t i) {
 		return m_incident[i]->other(this);
 	}
-	Vertex_const_handle neighbor(int i) const {
+	Vertex_const_handle neighbor(size_t i) const {
 		return m_incident[i]->other(this);
 	}
 	bool is_neighbor_of(Vertex_const_handle v) const {
-		for (int i = degree() - 1; i >= 0; --i) {
+		for (size_t i = degree() - 1; i >= 0; --i) {
 			if (neighbor(i) == v) {
 				return true;
 			}
@@ -1612,8 +1618,8 @@ void graph_2_copy(InGraph& input, OutGraph& output,
 
 				output.m_paths.resize(input.m_paths.size());
 				for (const InPath p : input.m_paths) {
-					OutPath op = new OutGraph::Path(output.m_edges[p->m_src->m_index],
-					                                output.m_edges[p->m_end->m_index], p->cyclic,
+					OutPath op = new OutGraph::Path(output.m_edges[p->m_start->m_index],
+					                                output.m_edges[p->m_end->m_index], p->m_cyclic,
 					                                p->m_index);
 					output.m_paths[p->m_index] = op;
 				}
