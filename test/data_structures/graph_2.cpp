@@ -253,9 +253,14 @@ TEST_CASE("Graph copy") {
 	CHECK(g.number_of_edges() == 2);
 
 	G2 g2;
-	graph_2_copy(g, g2, true);
+	graph_2_copy(g, g2);
 
 	CHECK(g2.is_initialized());
 	CHECK(g2.number_of_vertices() == 3);
 	CHECK(g2.number_of_edges() == 2);
+
+	using G3 = Straight_graph_2<std::monostate, std::monostate, Inexact, DecomposedGraph<true, std::monostate>>;
+
+	G3 g3;
+	graph_2_copy(g, g3);
 }

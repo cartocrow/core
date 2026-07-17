@@ -7,4 +7,5 @@ namespace cartocrow {
 
 template <class VD, class ED, class K, class M>
 using Straight_graph_2 = Graph_2<VD, ED, Graph_segment_curve_traits_2<K>, M>;
+
 }

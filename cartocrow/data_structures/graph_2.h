@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "graph_curve_traits_2.h"
 #include "graph_map_2.h"
 #include "graph_operation_2.h"
@@ -21,8 +23,13 @@ class Graph_2 {
 	template <typename G, typename T> friend class Graph_vertex_map;
 	template <typename G, typename T> friend class Graph_edge_map;
 	template <typename G, typename T> friend class Graph_path_map;
+
 	template <class InGraph, class OutGraph>
-	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
+	friend void
+	graph_2_copy(InGraph& input, OutGraph& output,
+	             const std::function<typename OutGraph::Curve_traits::Curve_representation_2(
+	                 const typename InGraph::Curve_traits::Curve_representation_2&)>& conversion,
+	             bool requireResorting);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -158,7 +165,7 @@ class Graph_2 {
 		}
 	}
 
-	bool verify_traits() {
+	bool verify_traits() const {
 		if constexpr (GraphTraits::oriented) {
 			if (!verify_oriented())
 				return false;
@@ -170,7 +177,13 @@ class Graph_2 {
 		return true;
 	}
 
-	void orient(Vertex_handle v) {
+	void ensure_oriented() requires Graph_traits::oriented {
+		for (Vertex_handle v : m_vertices) {
+			orient(v);
+		}
+	}
+
+	void orient(Vertex_handle v) requires Graph_traits::oriented {
 		if (v->degree() != 2)
 			return; // irrelevant for orientation
 
@@ -225,7 +238,7 @@ class Graph_2 {
 		}
 	}
 
-	bool verify_oriented() const {
+	bool verify_oriented() const requires Graph_traits::oriented {
 		for (Vertex_handle v : m_vertices) {
 			if (v->degree() != 2)
 				continue; // irrelevant for orientation
@@ -242,7 +255,13 @@ class Graph_2 {
 		return true;
 	}
 
-	void sort_incident_edges(Vertex_handle v) {
+	void ensure_sorted() requires Graph_traits::sorted {
+		for (Vertex_handle v : m_vertices) {
+			sort_incident_edges(v);
+		}
+	}
+
+	void sort_incident_edges(Vertex_handle v) requires Graph_traits::sorted {
 		if (v->degree() > 2) {
 			std::ranges::sort(v->m_incident, [&v](Edge* e, Edge* f) {
 				CGAL::Direction_2<Kernel> dir_e =
@@ -253,7 +272,7 @@ class Graph_2 {
 			});
 		}
 	}
-	bool verify_sorted() const {
+	bool verify_sorted() const requires Graph_traits::sorted {
 		for (Vertex_const_handle v : m_vertices) {
 			if (v->degree() > 2) {
 				CGAL::Direction_2<Kernel> dir_prev =
@@ -1089,8 +1108,13 @@ template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, Grap
 class Graph_2_vertex {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
 	template <class InGraph, class OutGraph>
-	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
+	friend void
+	graph_2_copy(InGraph& input, OutGraph& output,
+	             const std::function<typename OutGraph::Curve_traits::Curve_representation_2(
+	                 const typename InGraph::Curve_traits::Curve_representation_2&)>& conversion,
+	             bool requireResorting);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1283,8 +1307,13 @@ class Graph_2_edge {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
 	template <class InGraph, class OutGraph>
-	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
+	friend void
+	graph_2_copy(InGraph& input, OutGraph& output,
+	             const std::function<typename OutGraph::Curve_traits::Curve_representation_2(
+	                 const typename InGraph::Curve_traits::Curve_representation_2&)>& conversion,
+	             bool requireResorting);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1423,8 +1452,13 @@ class Graph_2_path {
 	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
 	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+
 	template <class InGraph, class OutGraph>
-	friend void graph_2_copy(InGraph& input, OutGraph& output, bool initialize);
+	friend void
+	graph_2_copy(InGraph& input, OutGraph& output,
+	             const std::function<typename OutGraph::Curve_traits::Curve_representation_2(
+	                 const typename InGraph::Curve_traits::Curve_representation_2&)>& conversion,
+	             bool requireResorting);
 
 	// basic operations
 	template <class G> friend class detail::AddVertex;
@@ -1471,6 +1505,9 @@ class Graph_2_path {
 	Graph_2_path(Edge_handle src, size_t index)
 	    : m_start(src), m_end(src), m_cyclic(false), m_index(index) {}
 
+	Graph_2_path(Edge_handle src, Edge_handle end, bool cyclic, size_t index)
+	    : m_start(src), m_end(end), m_cyclic(cyclic), m_index(index) {}
+
 	Graph_2_path(Edge_handle start, Edge_handle end, bool cyclic, size_t index, Path_data data)
 	    : m_start(start), m_end(end), m_cyclic(cyclic), m_index(index), m_data(data) {}
 
@@ -1496,9 +1533,29 @@ class Graph_2_path {
 };
 
 template <class InGraph, class OutGraph>
-//requires std::is_same<typename InGraph::Curve_traits, typename OutGraph::Curve_traits>::value
-void
-graph_2_copy(InGraph& input, OutGraph& output, bool initialize = true) {
+requires std::is_same<typename InGraph::Curve_traits::Curve_representation_2,
+                      typename OutGraph::Curve_traits::Curve_representation_2>::value void
+graph_2_copy(InGraph& input, OutGraph& output) {
+	using CurveRep = InGraph::Curve_traits::Curve_representation_2;
+	graph_2_copy(input, output, [](const CurveRep& cr) { return cr; }, false);
+}
+
+/// General graph-copy function. A conversion function between the curve representations must be provided.
+///
+/// - The output graph will be cleared, and deinitialized
+/// - All vertices and edges are copied
+/// - The output graph will be initialized if the input graph is initialized.
+/// - Indices of vertices, edges and paths (if both graphs have the decomposed GraphTrait) will match
+/// - Any history of the input graph will NOT be copied
+/// - Any associated data with vertices, edges or paths are NOT copied
+///
+/// Note that changes made to the curves may require re-sorting the edges. If it is ensured, by construction,
+/// that order around vertices is not changed, setting the last parameter to false may give a performance gain.
+template <class InGraph, class OutGraph>
+void graph_2_copy(InGraph& input, OutGraph& output,
+                  const std::function<typename OutGraph::Curve_traits::Curve_representation_2(
+                      const typename InGraph::Curve_traits::Curve_representation_2&)>& conversion,
+                  bool requireResorting = true) {
 
 	using InVertex = InGraph::Vertex_handle;
 	using InEdge = InGraph::Edge_handle;
@@ -1507,24 +1564,69 @@ graph_2_copy(InGraph& input, OutGraph& output, bool initialize = true) {
 
 	output.clear(true);
 
-	for (InVertex v : input.vertices()) {
-		output.m_vertices.push_back(new OutGraph::Vertex(
-			v->point(), output.m_vertices.size()));
+	output.m_vertices.resize(input.m_vertices.size());
+	for (InVertex v : input.m_vertices) {
+		output.m_vertices[v->m_index] = new OutGraph::Vertex(
+		    convert_kernel<typename OutGraph::Kernel>(v->m_point), v->m_index);
 	}
-	for (InEdge e : input.edges()) {
-		output.m_edges.push_back(new OutGraph::Edge(output.m_vertices[e->source()->graph_index()],
-		                                            output.m_vertices[e->target()->graph_index()],
-		                                            output.m_edges.size(), e->m_representation));
+	output.m_edges.resize(input.m_edges.size());
+	for (InEdge e : input.m_edges) {
+		output.m_edges[e->m_index] = new OutGraph::Edge(
+		    output.m_vertices[e->m_source->m_index], output.m_vertices[e->m_target->m_index],
+		    e->m_index, conversion(e->m_representation));
 	}
 	for (OutVertex v : output.vertices()) {
-		InVertex in_v = input.m_vertices[v->graph_index()];
+		InVertex in_v = input.m_vertices[v->m_index];
 		for (InEdge in_e : in_v->m_incident) {
-			v->m_incident.push_back(output.m_edges[in_e->graph_index()]);
+			v->m_incident.push_back(output.m_edges[in_e->m_index]);
 		}
 	}
 
-	if (initialize) {
-		output.initialize();
+	if (input.is_initialized()) {
+		output.m_initialized = true;
+
+		if constexpr (OutGraph::Graph_traits::oriented) {
+			if constexpr (InGraph::Graph_traits::oriented) {
+				// nothing to do, oriented is copied by design
+			} else {
+				output.ensure_oriented();
+			}
+		}
+
+		if constexpr (OutGraph::Graph_traits::sorted) {
+			if constexpr (InGraph::Graph_traits::sorted) {
+				// nothing to do, sorted is copied by design, unless the geometry has changed in the conversion
+				if (requireResorting) {
+					output.ensure_sorted();
+				}
+			} else {
+				output.ensure_sorted();
+			}
+		}
+
+		if constexpr (OutGraph::Graph_traits::decomposed) {
+			if constexpr (InGraph::Graph_traits::decomposed) {
+
+				using InPath = InGraph::Path_handle;
+				using OutPath = OutGraph::Path_handle;
+
+				output.m_paths.resize(input.m_paths.size());
+				for (const InPath p : input.m_paths) {
+					OutPath op = new OutGraph::Path(output.m_edges[p->m_src->m_index],
+					                                output.m_edges[p->m_end->m_index], p->cyclic,
+					                                p->m_index);
+					output.m_paths[p->m_index] = op;
+				}
+
+				for (OutEdge e : output.m_edges) {
+					e->m_path = output.m_paths[input.m_edges[e->m_index]->m_path->m_index];
+				}
+			} else {
+				output.ensure_decomposed();
+			}
+		}
+
+		assert(output.is_initialized());
 	}
 }
 
