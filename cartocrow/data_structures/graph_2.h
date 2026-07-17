@@ -277,7 +277,7 @@ class Graph_2 {
 			if (v->degree() > 2) {
 				CGAL::Direction_2<Kernel> dir_prev =
 				    CGAL::Direction_2<Kernel>(v->neighbor(0)->m_point - v->m_point);
-				for (int i = 1; i < v->degree(); i++) {
+				for (size_t i = 1; i < v->degree(); ++i) {
 					CGAL::Direction_2<Kernel> dir =
 					    CGAL::Direction_2<Kernel>(v->neighbor(i)->m_point - v->m_point);
 					if (dir < dir_prev) {
@@ -1060,7 +1060,7 @@ class Graph_2 {
 		}
 		std::vector<Point<Inexact>> points;
 		for (Vertex_handle v : m_vertices) {
-			points.push_back(v->point());
+			points.push_back(approximate(v->point()));
 		}
 		auto box = CGAL::bbox_2(points.begin(), points.end());
 		if constexpr (!std::same_as<Curve_2, Segment<Kernel>>) {
@@ -1163,11 +1163,15 @@ class Graph_2_vertex {
 	}
 
 	size_t find_incident_index(Edge_const_handle e) const {
-		size_t index = degree() - 1;
-		while (index >= 0 && m_incident[index] != e) {
-			--index;
+		assert(e->m_source == this || e->m_target == this);
+		const size_t deg = degree();
+		for (size_t index = 0; index < deg; ++index) {
+			if (m_incident[index] == e) {
+				return index;
+			}
 		}
-		return index;
+		assert(false);
+		return -1; // NB: this will give some positive number, as size_t is unsigned
 	}
 
 	void remove_incident(Edge_handle e) {
@@ -1210,8 +1214,8 @@ class Graph_2_vertex {
 		return m_incident[i]->other(this);
 	}
 	bool is_neighbor_of(Vertex_const_handle v) const {
-		for (size_t i = degree() - 1; i >= 0; --i) {
-			if (neighbor(i) == v) {
+		for (Edge_const_handle e : m_incident) {
+			if (e->other(this) == v) {
 				return true;
 			}
 		}
