@@ -118,7 +118,7 @@ class History {
 		--m_build;
 
 		if (m_build == 0) {
-			if (m_curr->number_of_operations()) {
+			if (m_curr->number_of_operations() == 0) {
 				m_groups.pop_back();
 				m_curr = m_groups.end();
 			} else {
