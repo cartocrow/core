@@ -1182,18 +1182,6 @@ class Graph_2_vertex {
 		m_incident.erase(std::next(m_incident.begin(), index));
 	}
 
-	size_t find_incident_index(Edge_const_handle e) const {
-		assert(e->m_source == this || e->m_target == this);
-		const size_t deg = degree();
-		for (size_t index = 0; index < deg; ++index) {
-			if (m_incident[index] == e) {
-				return index;
-			}
-		}
-		assert(false);
-		return -1; // NB: this will give some positive number, as size_t is unsigned
-	}
-
 	void remove_incident(Edge_handle e) {
 		remove_incident(find_incident_index(e));
 	}
@@ -1224,14 +1212,36 @@ class Graph_2_vertex {
 	Edge_handle incident_edge(size_t i) {
 		return m_incident[i];
 	}
-	Edge_const_handle incident_edge(size_t i) const {
+	Edge_const_handle incident_edge(const size_t i) const {
 		return m_incident[i];
 	}
 	Vertex_handle neighbor(size_t i) {
 		return m_incident[i]->other(this);
 	}
-	Vertex_const_handle neighbor(size_t i) const {
+	Vertex_const_handle neighbor(const size_t i) const {
 		return m_incident[i]->other(this);
+	}
+	size_t find_incident_index(Edge_const_handle e) const {
+		assert(e->m_source == this || e->m_target == this);
+		const size_t deg = degree();
+		for (size_t index = 0; index < deg; ++index) {
+			if (m_incident[index] == e) {
+				return index;
+			}
+		}
+		assert(false);
+		return -1; // NB: this will give some positive number, as size_t is unsigned
+	}
+	Edge_handle neighboring_incident_edge(Edge_handle e, const bool ccw) requires GraphTraits::sorted {
+		return neighboring_incident_edge(find_incident_index(e), ccw);
+	}
+	Edge_handle neighboring_incident_edge(size_t i, const bool ccw) requires GraphTraits::sorted {
+		if (ccw) {
+			return m_incident[(i + 1) % m_incident.size()];			
+		} else {
+			return m_incident[(i + m_incident.size() - 1) % m_incident.size()];
+		}
+
 	}
 	bool is_neighbor_of(Vertex_const_handle v) const {
 		for (Edge_const_handle e : m_incident) {
@@ -1483,6 +1493,12 @@ class Graph_2_edge {
 	}
 	Edge_const_handle next() const requires GraphTraits::oriented {
 		return m_target->outgoing();
+	}
+	Edge_handle next(const bool ccw) requires GraphTraits::sorted {
+		return m_target->neighboring_incident_edge(this, ccw);
+	}
+	Edge_handle prev(bool ccw) requires GraphTraits::sorted {
+		return m_source->neighboring_incident_edge(this, ccw);
 	}
 };
 

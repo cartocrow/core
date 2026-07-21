@@ -43,6 +43,10 @@ class OperationGroup {
 			op->forget_future();
 		}
 	}
+
+	size_t number_of_operations() {
+		return ops.size();
+	}
 };
 
 struct NoHistory {
@@ -114,7 +118,12 @@ class History {
 		--m_build;
 
 		if (m_build == 0) {
-			++m_curr;
+			if (m_curr->number_of_operations()) {
+				m_groups.pop_back();
+				m_curr = m_groups.end();
+			} else {
+				++m_curr;
+			}
 		}
 	}
 	void add_operation(std::unique_ptr<Operation> op) {
