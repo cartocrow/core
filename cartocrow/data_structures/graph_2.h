@@ -790,6 +790,26 @@ class Graph_2 {
 		return m_history;
 	}
 
+	inline bool can_perform_operation() {
+		if constexpr (GraphTraits::historic) {
+			return !m_history.can_redo();
+		} else {
+			return true;
+		}
+	}
+
+	inline void start_operation_group() {
+		if constexpr (GraphTraits::historic) {
+			m_history.start_group();
+		}
+	}
+
+	inline void end_operation_group() {
+		if constexpr (GraphTraits::historic) {
+			m_history.end_group();
+		}
+	}
+
 	Vertex_handle add_vertex(Point_2 p) {
 
 		Vertex_handle v = new Vertex(p, m_vertices.size());
@@ -1425,6 +1445,15 @@ class Graph_2_edge {
 		return other(v)->find_incident_index(this);
 	}
 
+	Vertex_handle common_vertex(Edge_handle other) {
+		if (other->m_source == m_source || other->m_target == m_source) {
+			return m_source;
+		} else if (other->m_source == m_target || other->m_target == m_target) {
+			return m_target;
+		} else {
+			return nullptr;
+		}
+	}
 	Vertex_handle other(Vertex_handle v) {
 		assert(v == m_source || v == m_target);
 		return v == m_source ? m_target : m_source;
