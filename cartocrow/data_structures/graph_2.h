@@ -800,13 +800,15 @@ class Graph_2 {
 
 	inline void start_operation_group() {
 		if constexpr (GraphTraits::historic) {
-			m_history.start_group();
+			if (m_initialized)
+				m_history.start_group();
 		}
 	}
 
 	inline void end_operation_group() {
 		if constexpr (GraphTraits::historic) {
-			m_history.end_group();
+			if (m_initialized)
+				m_history.end_group();
 		}
 	}
 
@@ -881,10 +883,6 @@ class Graph_2 {
 
 	void change_curve(Edge_handle e, Curve_representation new_rep) {
 
-		if constexpr (GraphTraits::sorted) {
-			assert(!m_initialized); // not yet supported
-		}
-
 		if (GraphTraits::historic && m_initialized) {
 			auto op = std::make_unique<detail::ChangeCurve<Graph_2>>(e, new_rep);
 			op->redo();
@@ -903,26 +901,23 @@ class Graph_2 {
 	    std::optional<std::function<typename CurveTraits::Curve_representation_2(Edge_const_handle)>>
 	        e_to_rep = std::nullopt) {
 
-		if constexpr (GraphTraits::sorted) {
-			assert(!m_initialized); // not yet supported
-		}
-
 		if (GraphTraits::historic && m_initialized) {
 			m_history.start_group();
 		}
 
-		for (auto eh : v->incident_edges()) {
-			if (e_to_rep.has_value()) {
-				change_curve(eh, (*e_to_rep)(eh));
-			} else {
-				auto new_representation = eh->representation();
-				if (eh->source() == v) {
-					Curve_traits::move_start(p, eh->target()->point(), new_representation);
+		if constexpr (!std::same_as<std::monostate, typename CurveTraits::Curve_representation_2>) {
+			for (auto eh : v->incident_edges()) {
+				if (e_to_rep.has_value()) {
+					change_curve(eh, (*e_to_rep)(eh));
 				} else {
-					Curve_traits::move_end(eh->source()->point(), p, new_representation);
+					auto new_representation = eh->representation();
+					if (eh->source() == v) {
+						Curve_traits::move_start(p, eh->target()->point(), new_representation);
+					} else {
+						Curve_traits::move_end(eh->source()->point(), p, new_representation);
+					}
+					change_curve(eh, std::move(new_representation));
 				}
-
-				change_curve(eh, std::move(new_representation));
 			}
 		}
 
@@ -1020,10 +1015,6 @@ class Graph_2 {
 		assert(m_initialized);
 		assert(v->degree() == 2);
 		assert(!v->prev()->is_neighbor_of(v->next()));
-
-		if constexpr (GraphTraits::sorted) {
-			assert(!m_initialized); // not yet supported
-		}
 
 		Edge_handle result = v->incoming();
 
@@ -1237,11 +1228,10 @@ class Graph_2_vertex {
 	}
 	Edge_handle neighboring_incident_edge(size_t i, const bool ccw) requires GraphTraits::sorted {
 		if (ccw) {
-			return m_incident[(i + 1) % m_incident.size()];			
+			return m_incident[(i + 1) % m_incident.size()];
 		} else {
 			return m_incident[(i + m_incident.size() - 1) % m_incident.size()];
 		}
-
 	}
 	bool is_neighbor_of(Vertex_const_handle v) const {
 		for (Edge_const_handle e : m_incident) {
@@ -1621,14 +1611,14 @@ void graph_2_copy(InGraph& input, OutGraph& output,
 
 	output.m_vertices.resize(input.m_vertices.size());
 	for (InVertex v : input.m_vertices) {
-		output.m_vertices[v->m_index] = new OutGraph::Vertex(
-		    convert_kernel<typename OutGraph::Kernel>(v->m_point), v->m_index);
+		output.m_vertices[v->m_index] =
+		    new OutGraph::Vertex(convert_kernel<typename OutGraph::Kernel>(v->m_point), v->m_index);
 	}
 	output.m_edges.resize(input.m_edges.size());
 	for (InEdge e : input.m_edges) {
-		output.m_edges[e->m_index] = new OutGraph::Edge(
-		    output.m_vertices[e->m_source->m_index], output.m_vertices[e->m_target->m_index],
-		    e->m_index, conversion(e->m_representation));
+		output.m_edges[e->m_index] = new OutGraph::Edge(output.m_vertices[e->m_source->m_index],
+		                                                output.m_vertices[e->m_target->m_index],
+		                                                e->m_index, conversion(e->m_representation));
 	}
 	for (OutVertex v : output.vertices()) {
 		InVertex in_v = input.m_vertices[v->m_index];
