@@ -240,19 +240,21 @@ class Graph_2 {
 
 	bool verify_oriented() const requires Graph_traits::oriented {
 		for (Vertex_handle v : m_vertices) {
-			if (v->degree() != 2)
-				continue; // irrelevant for orientation
-
-			auto bwd = v->m_incident[0];
-			auto fwd = v->m_incident[1];
-
-			if (bwd->m_target == v && fwd->m_source == v)
-				continue;
-
-			return false;
+			if (!verify_oriented(v)) {
+				return false;
+			}
 		}
 
 		return true;
+	}
+	bool verify_oriented(Vertex_const_handle v) const requires Graph_traits::oriented {
+		if (v->degree() != 2)
+			return true; // irrelevant for orientation
+
+		auto bwd = v->m_incident[0];
+		auto fwd = v->m_incident[1];
+
+		return bwd->m_target == v && fwd->m_source == v;
 	}
 
 	void ensure_sorted() requires Graph_traits::sorted {
@@ -274,17 +276,23 @@ class Graph_2 {
 	}
 	bool verify_sorted() const requires Graph_traits::sorted {
 		for (Vertex_const_handle v : m_vertices) {
-			if (v->degree() > 2) {
-				CGAL::Direction_2<Kernel> dir_prev =
-				    CGAL::Direction_2<Kernel>(v->neighbor(0)->m_point - v->m_point);
-				for (size_t i = 1; i < v->degree(); ++i) {
-					CGAL::Direction_2<Kernel> dir =
-					    CGAL::Direction_2<Kernel>(v->neighbor(i)->m_point - v->m_point);
-					if (dir < dir_prev) {
-						return false;
-					}
-					dir_prev = dir;
+			if (!verify_sorted(v)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool verify_sorted(Vertex_const_handle v) const requires Graph_traits::sorted {
+		if (v->degree() > 2) {
+			CGAL::Direction_2<Kernel> dir_prev =
+			    CGAL::Direction_2<Kernel>(v->neighbor(0)->m_point - v->m_point);
+			for (size_t i = 1; i < v->degree(); ++i) {
+				CGAL::Direction_2<Kernel> dir =
+				    CGAL::Direction_2<Kernel>(v->neighbor(i)->m_point - v->m_point);
+				if (dir < dir_prev) {
+					return false;
 				}
+				dir_prev = dir;
 			}
 		}
 		return true;

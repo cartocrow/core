@@ -494,11 +494,9 @@ template <class G> class MergeVertex : public Operation {
 
 		if constexpr (G::Graph_traits::decomposed) {
 			Path_handle p = outgoing->m_path;
-			if (p->m_start == outgoing->next()) {
-				assert(p->m_cyclic);
+			if (p->m_cyclic && p->m_start == outgoing->next()) {
 				p->m_start = outgoing;
 			} else if (p->m_end == incoming) {
-				assert(p->m_cyclic);
 				p->m_end = outgoing;
 			}
 		}
