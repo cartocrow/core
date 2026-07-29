@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QPolygon>
 #include <QSlider>
 #include <QToolButton>
+#include <QScreen>
 
 #include <cmath>
 #include <limits>
@@ -718,7 +719,10 @@ void GeometryWidget::drawText(const Point<Inexact>& p, const std::string& text, 
 	auto font = m_font;
 
 	if (m_textScalesWithZoom) {
-		font.setPixelSize(font.pixelSize() * zoomFactor());
+		double pixelSize = font.pixelSize() * zoomFactor();
+		double pointSize = pixelSize * 72.0 / screen()->logicalDotsPerInch();
+		if (pointSize < 0.375) return;
+		font.setPointSizeF(pointSize);
 	}
 
 	QFontMetricsF m(font);
