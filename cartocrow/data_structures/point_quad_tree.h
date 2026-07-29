@@ -32,6 +32,8 @@ template <PointQuadTreeTraits PQT> class PointQuadTree {
 	void findContained(Rectangle<Kernel>& query, ElementCallback act);
 	Element findElement(const Point<Kernel>& query, const Number<Kernel> prec = 0);
 
+    Rectangle<Kernel> root_box();
+
   private:
 	using Node = detail::PQTNode<PQT>;
 

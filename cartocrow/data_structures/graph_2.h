@@ -265,7 +265,7 @@ class Graph_2 {
 
 	void sort_incident_edges(Vertex_handle v) requires Graph_traits::sorted {
 		if (v->degree() > 2) {
-			std::ranges::sort(v->m_incident, [&v](Edge* e, Edge* f) {
+			std::ranges::sort(v->m_incident, [&v](Edge_handle e, Edge_handle f) {
 				CGAL::Direction_2<Kernel> dir_e =
 				    CGAL::Direction_2<Kernel>(e->other(v)->m_point - v->m_point);
 				CGAL::Direction_2<Kernel> dir_f =
@@ -1628,10 +1628,12 @@ void graph_2_copy(InGraph& input, OutGraph& output,
 		                                                output.m_vertices[e->m_target->m_index],
 		                                                e->m_index, conversion(e->m_representation));
 	}
-	for (OutVertex v : output.vertices()) {
+	for (OutVertex v : output.m_vertices) {
 		InVertex in_v = input.m_vertices[v->m_index];
-		for (InEdge in_e : in_v->m_incident) {
-			v->m_incident.push_back(output.m_edges[in_e->m_index]);
+		const size_t d = in_v->degree();
+		v->m_incident.resize(d);
+		for (size_t i = 0; i < d; ++i) {		
+			v->m_incident[i] = output.m_edges[in_v->m_incident[i]->m_index];
 		}
 	}
 

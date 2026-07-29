@@ -38,6 +38,8 @@ namespace cartocrow::data_structures {
 
 		void findOverlapped(Rectangle<Kernel>& query, ElementCallback act);
 
+	    Rectangle<Kernel> root_box();
+
 	private:
 		using Node = detail::QTNode<QT>;
 
