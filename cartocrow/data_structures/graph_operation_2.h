@@ -614,7 +614,6 @@ template <class G> class CollapseEdge : public Operation {
 	static void collapse_edge_no_curves(G& g, Edge_handle e) {
 
 		Vertex_handle v = e->source();
-		Edge_handle inc = v->incoming();
 		Edge_handle out = e->next();
 
 		// remove
@@ -633,7 +632,7 @@ template <class G> class CollapseEdge : public Operation {
 				p->m_start = out;
 			} else if (p->m_end == e) {
 				assert(p->m_cyclic);
-				p->m_end = inc;
+				p->m_end = v->incoming();
 			}
 		}
 	}

@@ -29,17 +29,19 @@ namespace cartocrow::data_structures {
 		void siftDown(int k, Element_handle elt);
 
 	public:
-		bool empty();
+		bool empty() const;
 
 		void push(Element_handle elt);
 		Element_handle pop();
-		Element_handle peek();
+		Element_handle peek() const;
 
 		bool remove(Element_handle elt);
-		bool contains(Element_handle elt);
+		bool contains(Element_handle elt) const;
 		void update(Element_handle elt);
 
 		void clear();
+
+		const std::vector<Element_handle>& content() const;
 	};
 
 } // namespace cartocrow::data_structures

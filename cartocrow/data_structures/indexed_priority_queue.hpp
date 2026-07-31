@@ -45,7 +45,7 @@ namespace cartocrow::data_structures {
 	}
 
 	template <QueueTraits QT>
-	bool IndexedPriorityQueue<QT>::empty() {
+	bool IndexedPriorityQueue<QT>::empty() const {
 		return queue.empty();
 	}
 
@@ -76,7 +76,7 @@ namespace cartocrow::data_structures {
 	}
 
 	template <QueueTraits QT>
-	QT::Element_handle IndexedPriorityQueue<QT>::peek() {
+	QT::Element_handle IndexedPriorityQueue<QT>::peek() const {
 		if (queue.empty()) {
 			return nullptr;
 		}
@@ -112,7 +112,7 @@ namespace cartocrow::data_structures {
 	}
 
 	template <QueueTraits QT>
-	bool IndexedPriorityQueue<QT>::contains(Element_handle elt) {
+	bool IndexedPriorityQueue<QT>::contains(Element_handle elt) const {
 		int id = QT::getIndex(elt);
 		if (id < 0 || id >= queue.size()) {
 			return false;
@@ -138,4 +138,9 @@ namespace cartocrow::data_structures {
 		}
 		queue.clear();
 	}
-} // namespace cartocrow::data_structures
+
+	template <QueueTraits QT> 
+	const std::vector<typename QT::Element_handle>& IndexedPriorityQueue<QT>::content() const {
+	    return queue;
+    }
+    } // namespace cartocrow::data_structures

@@ -87,7 +87,6 @@ class Graph_2 {
 	std::vector<Graph_map_base*> m_path_maps;
 
 	void insert_vertex_into_container(Vertex_handle v) {
-
 		const size_t index = v->graph_index();
 		if (index == m_vertices.size()) {
 			m_vertices.push_back(v);
@@ -139,14 +138,13 @@ class Graph_2 {
 	}
 
 	void remove_edge_from_container(Edge_handle e) {
-		const size_t graph_index = e->m_index;
+		const size_t index = e->m_index;
 		const size_t last = m_edges.size() - 1;
-		if (graph_index != last) {
-			m_edges[graph_index] = m_edges[last];
-			m_edges[graph_index]->m_index = graph_index;
-
+		if (index != last) {
+			m_edges[index] = m_edges[last];
+			m_edges[index]->m_index = index;
 			for (Graph_map_base* m : m_edge_maps) {
-				m->remove_index(graph_index);
+				m->remove_index(index);
 			}
 		} else {
 			for (Graph_map_base* m : m_edge_maps) {
@@ -359,6 +357,32 @@ class Graph_2 {
 				return false;
 			}
 		}
+		return true;
+	}
+
+	bool verify_graph_structure() const {
+		for (Vertex_handle v : m_vertices) {
+			if (v->m_index >= m_vertices.size()) {
+				return false;
+			} else if (m_vertices[v->m_index] != v) {
+				return false;
+			}
+
+			for (Edge_handle e : v->m_incident) {
+				if (m_edges[e->m_index] != e) {
+					return false;
+				}
+			}
+		}
+
+		for (Edge_handle e : m_edges) {
+			if (e->m_index >= m_edges.size()) {
+				return false;
+			} else if (m_edges[e->m_index] != e) {
+				return false;
+			}
+		}
+
 		return true;
 	}
 
@@ -832,6 +856,7 @@ class Graph_2 {
 			detail::AddVertex<Graph_2>::add_vertex(*this, v);
 		}
 
+		assert(verify_graph_structure());
 		return v;
 	}
 	void remove_vertex(Vertex_handle v) {
@@ -849,6 +874,8 @@ class Graph_2 {
 			detail::RemoveVertex<Graph_2>::remove_vertex(*this, v);
 			delete v;
 		}
+
+		assert(verify_graph_structure());
 	}
 	Edge_handle add_edge(Vertex_handle source,
 	                     Vertex_handle target) requires std::same_as<Curve_2, Segment<Kernel>> {
@@ -871,6 +898,7 @@ class Graph_2 {
 			detail::AddEdge<Graph_2>::add_edge(*this, e);
 		}
 
+		assert(verify_graph_structure());
 		return e;
 	}
 	void remove_edge(Edge_handle e) {
@@ -887,6 +915,8 @@ class Graph_2 {
 			detail::RemoveEdge<Graph_2>::remove_edge(*this, e);
 			delete e;
 		}
+
+		assert(verify_graph_structure());
 	}
 
 	void change_curve(Edge_handle e, Curve_representation new_rep) {
@@ -975,6 +1005,7 @@ class Graph_2 {
 			                                           CurveTraits::representation(c2));
 		}
 
+		assert(verify_graph_structure());
 		return new_e;
 	}
 
@@ -1008,6 +1039,7 @@ class Graph_2 {
 			                                             CurveTraits::representation(fromNewPoint));
 		}
 
+		assert(verify_graph_structure());
 		return result;
 	}
 
@@ -1036,6 +1068,7 @@ class Graph_2 {
 			                                           CurveTraits::representation(newCurve));
 		}
 
+		assert(verify_graph_structure());
 		return result;
 	}
 
@@ -1070,6 +1103,7 @@ class Graph_2 {
 			                                               CurveTraits::representation(toNewPoint));
 		}
 
+		assert(verify_graph_structure());
 		return new_v;
 	}
 
@@ -1241,6 +1275,14 @@ class Graph_2_vertex {
 			return m_incident[(i + m_incident.size() - 1) % m_incident.size()];
 		}
 	}
+	Edge_handle find_edge_to(Vertex_const_handle v) const {
+		for (Edge_handle e : m_incident) {
+			if (e->other(this) == v) {
+				return e;
+			}
+		}
+		return nullptr;
+	}
 	bool is_neighbor_of(Vertex_const_handle v) const {
 		for (Edge_const_handle e : m_incident) {
 			if (e->other(this) == v) {
@@ -1337,6 +1379,12 @@ class Graph_2_vertex {
 	}
 	Incident_edges_const_range incident_edges() const {
 		return Incident_edges_const_range(m_incident);
+	}
+
+	friend std::ostream&
+	operator<<(std::ostream& os,
+	           const Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+		return os << "[" << c.m_index << " @ " << c.m_point << " ; d= " << c.m_incident.size() << "]";
 	}
 };
 
@@ -1498,6 +1546,12 @@ class Graph_2_edge {
 	Edge_handle prev(bool ccw) requires GraphTraits::sorted {
 		return m_source->neighboring_incident_edge(this, ccw);
 	}
+
+	friend std::ostream&
+	operator<<(std::ostream& os,
+	           const Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+		return os << "[" << c.m_index << " : " << *(c.m_source) << " -> " << *(c.m_target) << "]";
+	}
 };
 
 template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
@@ -1632,7 +1686,7 @@ void graph_2_copy(InGraph& input, OutGraph& output,
 		InVertex in_v = input.m_vertices[v->m_index];
 		const size_t d = in_v->degree();
 		v->m_incident.resize(d);
-		for (size_t i = 0; i < d; ++i) {		
+		for (size_t i = 0; i < d; ++i) {
 			v->m_incident[i] = output.m_edges[in_v->m_incident[i]->m_index];
 		}
 	}
