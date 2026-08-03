@@ -912,6 +912,22 @@ void GeometryWidget::setVerticalTextAlignment(VerticalTextAlignment alignment) {
 	}
 }
 
+void GeometryWidget::setFontFamily(std::string fontFamily) {
+	m_font.setFamily(QString::fromStdString(fontFamily));
+}
+
+void GeometryWidget::setFontSize(double fontSize) {
+	m_font.setPixelSize(fontSize);
+}
+
+void GeometryWidget::setFontWeight(bool bold) {
+	m_font.setBold(bold);
+}
+
+void GeometryWidget::useDefaultFont() {
+	m_font = {};
+}
+
 void GeometryWidget::setTextFont(QFont font) {
 	m_font = font;
 }

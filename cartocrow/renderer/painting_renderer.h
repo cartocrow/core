@@ -56,6 +56,10 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
+	void setFontFamily(std::string fontFamily) override;
+	void setFontSize(double fontSize) override;
+	void setFontWeight(bool bold) override;
+	void useDefaultFont() override;
 
   private:
 	struct Style {
@@ -88,6 +92,12 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 		HorizontalTextAlignment m_horizontalTextAlignment = AlignHCenter;
 		/// Vertical text alignment
 		VerticalTextAlignment m_verticalTextAlignment = AlignVCenter;
+		/// Bold text?
+		bool m_bold = false;
+		/// Local (per text element) font size
+		std::optional<double> m_fontSize = std::nullopt;
+		/// Local (per text element) font family
+		std::optional<std::string> m_fontFamily = std::nullopt;
 	};
 	using Label = std::tuple<Point<Inexact>, std::string, bool>;
 	using DrawableObject =

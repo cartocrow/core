@@ -210,6 +210,14 @@ class GeometryRenderer {
 	virtual void setHorizontalTextAlignment(HorizontalTextAlignment alignment) = 0;
 	/// Set vertical text alignment.
 	virtual void setVerticalTextAlignment(VerticalTextAlignment alignment) = 0;
+	/// Set font family (assumes it is the name of a system font that is installed) 
+	virtual void setFontFamily(std::string fontFamily) = 0;
+	/// Set font size
+	virtual void setFontSize(double fontSize) = 0;
+	/// Set font weight
+	virtual void setFontWeight(bool bold) = 0;
+	/// Remove font specification (if possible in the renderer) and use the default instead
+	virtual void useDefaultFont() = 0;
 	/// @}
 };
 

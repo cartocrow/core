@@ -76,11 +76,6 @@ void IpeRenderer::save(const std::filesystem::path& file) {
 	setFillOpacity(255); // add default alpha to style sheet
 	setStrokeOpacity(255); // add default alpha to style sheet
 
-	auto latexPreambleSheet = new ipe::StyleSheet();
-	latexPreambleSheet->setPreamble(m_preamble.c_str());
-	latexPreambleSheet->setName("latex-preamble");
-	document.cascade()->insert(3, latexPreambleSheet);
-
 	m_page = new ipe::Page();
 	document.push_back(m_page);
 
@@ -101,6 +96,18 @@ void IpeRenderer::save(const std::filesystem::path& file) {
 		m_layer = m_page->countLayers() - 1;
 		painting.m_painting->paint(*this);
 		popStyle();
+	}
+
+	auto latexPreambleSheet = new ipe::StyleSheet();
+	latexPreambleSheet->setPreamble(m_preamble.c_str());
+	latexPreambleSheet->setName("latex-preamble");
+	document.cascade()->insert(3, latexPreambleSheet);
+
+	if (m_usedLocalFont) {
+		auto fontSpecSheet = new ipe::StyleSheet();
+		fontSpecSheet->setPreamble("\\usepackage{fontspec}");
+		fontSpecSheet->setName("font-spec");
+		document.cascade()->insert(4, fontSpecSheet);
 	}
 
 	auto pdf = file.extension() == ".pdf";
@@ -290,8 +297,24 @@ void IpeRenderer::draw(const RenderPath& p) {
 }
 
 void IpeRenderer::drawText(const Point<Inexact>& p, const std::string& text, bool escape) {
-	ipe::String labelText = escape ? escapeForLaTeX(text).data() : text.data();
-	ipe::Text* label = new ipe::Text(getAttributesForStyle(), labelText,
+	std::string labelText = escape ? escapeForLaTeX(text) : text;
+	std::stringstream fullLabelText;
+	if (m_style.m_fontFamily.has_value() || m_style.m_fontSize.has_value()) {
+		m_usedLocalFont = true;
+		if (m_style.m_fontFamily.has_value()) {
+			fullLabelText << "\\fontspec{" << *m_style.m_fontFamily << "}";
+		}
+		if (m_style.m_fontSize.has_value()) {
+			fullLabelText << "\\fontsize{" << *m_style.m_fontSize << "}{" << (*m_style.m_fontSize + 2) << "}";
+		}
+		fullLabelText << "\\selectfont ";
+	}
+	if (m_style.m_bold) {
+		fullLabelText << "\\textbf{" << text << "}";
+	} else {
+		fullLabelText << text;
+	}
+	ipe::Text* label = new ipe::Text(getAttributesForStyle(), fullLabelText.str().data(),
 	                                 ipe::Vector(p.x(), p.y()), ipe::Text::TextType::ELabel);
     label->setHorizontalAlignment(m_style.m_horizontalTextAlignment);
     label->setVerticalAlignment(m_style.m_verticalTextAlignment);
@@ -329,6 +352,19 @@ ipe::Attribute IpeRenderer::opacity_attribute(int alpha) {
 	}
 	return name;
 }
+
+//ipe::Attribute IpeRenderer::opacity_attribute(int alpha) {
+//	// Ipe does not allow arbitrary opacity values; it only allows symbolic
+//	// references to alpha values from the stylesheet.
+//	// Therefore, we check if the requested opacity value already exists. If
+//	// not, we add it to the stylesheet.
+//	ipe::Attribute name = ipe::Attribute(true, std::to_string(alpha).data());
+//	if (!m_alphaSheet->has(ipe::Kind::EOpacity, name)) {
+//		m_alphaSheet->add(ipe::Kind::EOpacity, name,
+//		                  ipe::Attribute(ipe::Fixed::fromDouble(alpha / 255.0)));
+//	}
+//	return name;
+//}
 
 void IpeRenderer::setStrokeOpacity(int alpha) {
 	auto name = opacity_attribute(alpha);
@@ -423,6 +459,23 @@ void IpeRenderer::setVerticalTextAlignment(VerticalTextAlignment alignment) {
 		break;
 	}
 	}
+}
+
+void IpeRenderer::setFontFamily(std::string fontFamily) {
+	m_style.m_fontFamily = fontFamily;
+}
+
+void IpeRenderer::setFontSize(double fontSize) {
+	m_style.m_fontSize = fontSize;
+}
+
+void IpeRenderer::useDefaultFont() { 
+	m_style.m_fontSize = std::nullopt;
+	m_style.m_fontFamily = std::nullopt;
+}
+
+void IpeRenderer::setFontWeight(bool bold) {
+	m_style.m_bold = bold;
 }
 
 void IpeRenderer::drawPathOnPage(ipe::Path* path) {

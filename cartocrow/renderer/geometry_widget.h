@@ -218,6 +218,10 @@ class GeometryWidget : public QWidget, public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
+	void setFontFamily(std::string fontFamily) override;
+	void setFontSize(double fontSize) override;
+	void setFontWeight(bool bold) override;
+	void useDefaultFont() override;
 	void setTextScaling(bool textScalesWithZoom);
 	void setTextFont(QFont font);
   private:

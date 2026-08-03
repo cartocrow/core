@@ -168,4 +168,21 @@ void PaintingRenderer::setVerticalTextAlignment(VerticalTextAlignment alignment)
 	m_style.m_verticalTextAlignment = alignment;
     m_objects.push_back(m_style);
 }
+
+void PaintingRenderer::setFontFamily(std::string fontFamily) {
+	m_style.m_fontFamily = fontFamily;
+}
+
+void PaintingRenderer::setFontSize(double fontSize) {
+	m_style.m_fontSize = fontSize;
+}
+
+void PaintingRenderer::setFontWeight(bool bold) {
+	m_style.m_bold = bold;
+}
+
+void PaintingRenderer::useDefaultFont() { 
+	m_style.m_fontSize = std::nullopt;
+	m_style.m_fontFamily = std::nullopt;
+}
 } // namespace cartocrow::renderer
