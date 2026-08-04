@@ -302,14 +302,14 @@ void IpeRenderer::drawText(const Point<Inexact>& p, const std::string& text, boo
 	if (m_style.m_fontFamily.has_value() || m_style.m_fontSize.has_value()) {
 		m_usedLocalFont = true;
 		if (m_style.m_fontFamily.has_value()) {
-			fullLabelText << "\\fontspec{" << *m_style.m_fontFamily << "}";
+			fullLabelText << "\\fontspec{" << (m_style.m_bold ? *m_style.m_fontFamily + " Bold" : *m_style.m_fontFamily) << "}";
 		}
 		if (m_style.m_fontSize.has_value()) {
 			fullLabelText << "\\fontsize{" << *m_style.m_fontSize << "}{" << (*m_style.m_fontSize + 2) << "}";
 		}
 		fullLabelText << "\\selectfont ";
-	}
-	if (m_style.m_bold) {
+		fullLabelText << text;
+	} else if (m_style.m_bold) {
 		fullLabelText << "\\textbf{" << text << "}";
 	} else {
 		fullLabelText << text;
