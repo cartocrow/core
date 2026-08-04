@@ -1039,7 +1039,9 @@ void GeometryWidget::saveToIpe() {
 
 	IpeRenderer renderer;
 	for (const DrawnPainting& painting : m_paintings) {
-		renderer.addPainting(painting.m_painting, painting.name);
+		if (painting.visible) {
+			renderer.addPainting(painting.m_painting, painting.name);
+		}
 	}
 	std::filesystem::path filePath = fileName.toStdString();
 	if (!filePath.has_extension()) {
@@ -1056,7 +1058,9 @@ void GeometryWidget::saveToSvg() {
 
 	SvgRenderer renderer;
 	for (const DrawnPainting& painting : m_paintings) {
-		renderer.addPainting(painting.m_painting, painting.name);
+		if (painting.visible) {
+			renderer.addPainting(painting.m_painting, painting.name);
+		}
 	}
 	auto windowSize = size();
 	auto bottomLeft = inverseConvertPoint(QPoint(0, windowSize.height()));
