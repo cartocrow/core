@@ -204,6 +204,7 @@ void SvgRenderer::drawText(const Point<Inexact>& p, const std::string& text, boo
 		  << (m_style.m_fontFamily.has_value() ? ("\" font-family=\"" + *m_style.m_fontFamily) : "")
 		  << (m_style.m_fontSize.has_value() ? ("\" font-size=\"" + std::to_string(*m_style.m_fontSize)) : "")
 		  << (m_style.m_bold ? ("\" font-weight=\"bold") : "")
+		  << "\" fill=\"" << m_style.m_strokeColor // ipe and qt use stroke color for text color so we do the same here
           << "\" x=\"" << p.x() << "\" y=\""
 	      << -p.y() << "\">" << (escape ? escapeForSvg(text) : text) << "</text>\n";
 }
