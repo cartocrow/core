@@ -32,34 +32,75 @@ template <class R> concept GeometryReader = requires(R reader, std::filesystem::
 	{reader.canRead(path)}->std::same_as<bool>;
 };
 
+struct Single {};
+struct Multiple {};
+struct WithoutAttributes {};
+struct WithAttributes{};
+
+template<class Geometry, class AttrMode>
+struct ElementType {
+    using type = Geometry;
+};
+
+template<class Geometry>
+struct ElementType<Geometry, WithAttributes> {
+    using type = GeometricFeature<Geometry>;
+};
+
+template<class Geometry, class AttrMode>
+using ElementTypeT = typename ElementType<Geometry, AttrMode>::type;
+
+template<class T, class Cardinality>
+struct CardinalityType {
+    using type = std::vector<T>;
+};
+
+template<class T>
+struct CardinalityType<T, Single> {
+    using type = std::optional<T>;
+};
+
+template<class T, class Cardinality>
+using CardinalityTypeT =
+    typename CardinalityType<T, Cardinality>::type;
+
+template<class Geometry,
+         class AttrMode,
+         class Cardinality>
+using ReadResultT =
+    CardinalityTypeT<
+        ElementTypeT<Geometry, AttrMode>,
+        Cardinality>;
+
 //GeometryReader R
-template <class  R, class Geometry, class OutputIterator>
+template <class  R, class Geometry>
 concept GeometryReaderFor =
-    GeometryReader<R> && requires(R reader, std::filesystem::path path, OutputIterator out) {
+    GeometryReader<R> && requires(R reader, std::filesystem::path path, std::back_insert_iterator<std::vector<Geometry>> outG, 
+		std::back_insert_iterator<std::vector<GeometricFeature<Geometry>>> outGF) {
 
 	/// Returns all geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
-	reader.template read<Geometry>(path, out);
+	reader.template read<Multiple, Geometry, WithoutAttributes>(path, outG);
 
 	/// Returns a vector with all geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template readV<Geometry>(path)}->std::same_as<std::vector<Geometry>>;
+	{reader.template read<Multiple, Geometry, WithoutAttributes>(path)}->std::same_as<std::vector<Geometry>>;
 
 	/// Returns the first geometry in the provided file that is convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template readSingle<Geometry>(path)}->std::same_as<std::optional<Geometry>>;
+	{reader.template read<Single, Geometry, WithoutAttributes>(path)}->std::same_as<std::optional<Geometry>>;
 
 	/// Returns geometries in the provided file that are convertible to Geometry including their attributes.
 	/// Outputs Feature<Geometry>.
 	/// \pre canRead(path)
-	reader.template readWithAttributes<Geometry>(path, out);
+	reader.template read<Multiple, Geometry, WithAttributes>(path, outGF);
 
 	/// Returns a vector with all geometries in the provided file that are convertible to Geometry including their attributes.
 	/// \pre canRead(path)
-	{reader.template readWithAttributesV<Geometry>(path)}->std::same_as<std::vector<GeometricFeature<Geometry>>>;
+	{reader.template read<Multiple, Geometry, WithAttributes>(path)}->std::same_as<std::vector<GeometricFeature<Geometry>>>;
 
 	/// Returns the first feature in the provided file that is convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template readSingleWithAttributes<Geometry>(path)}->std::same_as<std::optional<GeometricFeature<Geometry>>>;
+	{reader.template read<Single, Geometry, WithAttributes>(path)}->std::same_as<std::optional<GeometricFeature<Geometry>>>;
 };
 }

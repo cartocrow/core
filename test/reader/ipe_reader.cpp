@@ -26,7 +26,7 @@ using namespace renderer;
 TEST_CASE("Reading points") {
 	IpeReader ipeReader;
 
-	auto points = ipeReader.readV<Point<Inexact>>("data/test_ipe_reader.ipe");
+	auto points = ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>("data/test_ipe_reader.ipe");
 	CHECK(points.size() == 4);
 
 	auto exists = [&](Point<Inexact> point) {
@@ -44,7 +44,7 @@ TEST_CASE("Reading a polygon") {
 	Polygon<Inexact> expectedPolygon(points.begin(), points.end());
 
 	IpeReader ipeReader;
-	auto parsedPolygon = ipeReader.readSingle<Polygon<Inexact>>("data/test_ipe_reader.ipe");
+	auto parsedPolygon = ipeReader.read<Single, Polygon<Inexact>, WithoutAttributes>("data/test_ipe_reader.ipe");
 	CHECK(parsedPolygon == expectedPolygon);
 }
 
@@ -56,7 +56,7 @@ TEST_CASE("Reading points and a polygon") {
 	using PointOrPoly = std::variant<Point<Inexact>, Polygon<Inexact>>;
 
 	IpeReader ipeReader;
-	auto pointOrPolys = ipeReader.readV<PointOrPoly>("data/test_ipe_reader.ipe");
+	auto pointOrPolys = ipeReader.read<Multiple, PointOrPoly, WithoutAttributes>("data/test_ipe_reader.ipe");
 
 	CHECK(pointOrPolys.size() == 5);
 
@@ -77,8 +77,8 @@ TEST_CASE("Reading polygon sets") {
 	IpeReader ipeReader;
 	ipeReader.setPage(1);
 
-	auto psrs = ipeReader.readV<PolygonSetRaw<Inexact>>("data/test_ipe_reader.ipe");
-	auto pgns = ipeReader.readV<Polygon<Inexact>>("data/test_ipe_reader.ipe");
+	auto psrs = ipeReader.read<Multiple, PolygonSetRaw<Inexact>, WithoutAttributes>("data/test_ipe_reader.ipe");
+	auto pgns = ipeReader.read<Multiple, Polygon<Inexact>, WithoutAttributes>("data/test_ipe_reader.ipe");
 
 	CHECK(psrs.size() == 3);
 	CHECK(pgns.size() == 1);
@@ -92,16 +92,16 @@ TEST_CASE("Reading polylines, segments, Bézier curves and splines") {
 	IpeReader ipeReader;
 	ipeReader.setPage(2);
 
-	auto ls = ipeReader.readV<Segment<Inexact>>(fn);
+	auto ls = ipeReader.read<Multiple, Segment<Inexact>, WithoutAttributes>(fn);
 	CHECK(ls.size() == 1); // should only return the line segment
 
-	auto pls = ipeReader.readV<Polyline<Inexact>>(fn);
+	auto pls = ipeReader.read<Multiple, Polyline<Inexact>, WithoutAttributes>(fn);
 	CHECK(pls.size() == 2); // should return the polyline and the line segment
 
-	auto cbcs = ipeReader.readV<CubicBezierCurve>(fn);
+	auto cbcs = ipeReader.read<Multiple, CubicBezierCurve, WithoutAttributes>(fn);
 	CHECK(cbcs.size() == 2); // should return the cubic Bézier curve and the line segment
 
-	auto cbss = ipeReader.readV<CubicBezierSpline>(fn);
+	auto cbss = ipeReader.read<Multiple, CubicBezierSpline, WithoutAttributes>(fn);
 	CHECK(cbss.size() == 4); // should return all
 }
 
@@ -112,15 +112,34 @@ TEST_CASE("Read points from specific layer") {
 	ipeReader.setPage(3);
 
 	ipeReader.setLayerFilter("red");
-	auto redPoints = ipeReader.readV<Point<Inexact>>(fn);
+	auto redPoints = ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn);
 	ipeReader.setLayerFilter(0);
-	auto bluePoints = ipeReader.readV<Point<Inexact>>(fn);
+	auto bluePoints = ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn);
 	ipeReader.setLayerFilter("green");
-	auto greenPoints = ipeReader.readV<Point<Inexact>>(fn);
+	auto greenPoints = ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn);
 
 	CHECK(bluePoints.size() == 7);
 	CHECK(redPoints.size() == 11);
 	CHECK(greenPoints.size() == 8);
+}
+
+TEST_CASE("Read with output iterator") {
+	std::filesystem::path fn("data/test_ipe_reader.ipe");
+
+	IpeReader ipeReader;
+	ipeReader.setPage(3);
+
+	std::vector<Point<Inexact>> allPoints;
+	ipeReader.setLayerFilter("red");
+	ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn, std::back_inserter(allPoints));
+	ipeReader.setLayerFilter(0);
+	ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn, std::back_inserter(allPoints));
+	ipeReader.setLayerFilter("green");
+	ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>(fn, std::back_inserter(allPoints));
+
+	ipeReader.read<Single, Point<Inexact>, WithoutAttributes>(fn, std::back_inserter(allPoints));
+
+	CHECK(allPoints.size() == 27);
 }
 
 TEST_CASE("Read attributes") {
@@ -130,11 +149,11 @@ TEST_CASE("Read attributes") {
 	ipeReader.setPage(3);
 
 	ipeReader.setLayerFilter("red");
-	auto redPoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+	auto redPoints = ipeReader.read<Multiple, Point<Inexact>, WithAttributes>(fn);
 	ipeReader.setLayerFilter(0);
-	auto bluePoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+	auto bluePoints = ipeReader.read<Multiple, Point<Inexact>, WithAttributes>(fn);
 	ipeReader.setLayerFilter("green");
-	auto greenPoints = ipeReader.readWithAttributesV<Point<Inexact>>(fn);
+	auto greenPoints = ipeReader.read<Multiple, Point<Inexact>, WithAttributes>(fn);
 
 	CHECK(bluePoints.size() == 7);
 	for (const auto& bp : bluePoints) {
@@ -167,10 +186,10 @@ TEST_CASE("Read ellipses and circles") {
 	// The page has 5 ellipses, three of which are circles (two are grouped), one of which is a skewed circle (the object has a transformation matrix), the last is a 'proper' ipe ellipse.
 	// The two grouped circles should automatically be ungrouped.
 
-	auto circles = ipeReader.readV<Circle<Inexact>>(fn);
+	auto circles = ipeReader.read<Multiple, Circle<Inexact>, WithoutAttributes>(fn);
 	CHECK(circles.size() == 3);
 
-	auto ellipses = ipeReader.readV<Ellipse>(fn);
+	auto ellipses = ipeReader.read<Multiple, Ellipse, WithoutAttributes>(fn);
 	CHECK(ellipses.size() == 5);
 }
 

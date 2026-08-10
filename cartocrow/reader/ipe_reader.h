@@ -41,7 +41,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace cartocrow {
 template <class Geometry, class OutputIterator, class Traits>
 concept IpeReaderTraits = requires(ipe::Object& o, OutputIterator out) {
-	{ Traits::template convert(o, out) };
+	{ Traits::template convert(o, out) }->std::same_as<bool>;
 };
 
 // todo: make a RenderPath reader traits that parses everything to a render path?
@@ -52,7 +52,7 @@ using IntermediateIpeGeometry = std::variant<
 
 template <class Geometry, class OutputIterator, class Traits>
 concept IpeReaderIntermediateGeometryConverter = requires(const IntermediateIpeGeometry& g, OutputIterator out) {
-	{ Traits::template convert(g, out) };
+	{ Traits::template convert(g, out) }->std::same_as<bool>;
 };
 
 /// is a model of IpeReaderTraits 
@@ -315,13 +315,15 @@ struct IpeReaderIntermediateGeometryTraits {
 	}
 
 	template <class OutputIterator>
-	static void convert(ipe::Object& o, OutputIterator out) {
+	static bool convert(ipe::Object& o, OutputIterator out) {
 		std::vector<IntermediateIpeGeometry> intermediates;
 		convertToIntermediate(o, std::back_inserter(intermediates));
 
 		for (const auto& intermediate : intermediates) {
 			Converter::convert(intermediate, out);
 		}
+
+		return !intermediates.empty();
 	}
 };
 
@@ -329,16 +331,19 @@ struct IpeReaderIntermediateGeometryTraits {
 template <class Geometry>
 struct BasicIpeReaderTraitsConverter {
 	template <class OutputIterator>
-	static void convert(const IntermediateIpeGeometry& g, OutputIterator out) {
+	static bool convert(const IntermediateIpeGeometry& g, OutputIterator out) {
+		bool convertedSomething = false;
 		std::visit(
 		    [&](auto&& g) {
 			    using T = std::decay_t<decltype(g)>;
 
 			    if constexpr (std::is_convertible_v<T, Geometry>) {
 				    *out++ = Geometry{g};
+					convertedSomething = true;
 			    }
 		    },
 		g);
+		return convertedSomething;
 	}
 };
 
@@ -538,103 +543,90 @@ class IpeReader {
 		return path.extension() == ".ipe";
 	}
 
-	/// Returns all geometries in the provided file that are convertible to Geometry.
+	/// Returns geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
 	template <
+		class Cardinality,
 		class Geometry,
+		class AttrMode,
+		class Traits = BasicIpeReaderTraits<Geometry>
+	>
+		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
+	ReadResultT<Geometry, AttrMode, Cardinality> read(std::filesystem::path path) {
+		std::vector<ElementTypeT<Geometry, AttrMode>> gs;
+
+		readHelper(path, [&](ipe::Page* page, int i) {
+			ipe::Object* object = page->object(i);
+			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
+				Traits::convert(*object, std::back_inserter(gs));
+				if constexpr (std::same_as<Cardinality, Single>) {
+					return !gs.empty(); // stop if a geometry is found
+				} else {
+					return false;
+				}
+			} else {
+				auto attributes = getAttributes(page, i);
+
+				std::vector<Geometry> temps;
+				Traits::convert(*object, std::back_inserter(temps));
+				for (auto& t : temps) {
+					gs.emplace_back(std::move(t), attributes);
+				}
+				if constexpr (std::same_as<Cardinality, Single>) {
+					return !gs.empty(); // stop if a geometry is found
+				} else {
+					return false;
+				}
+			}
+		});
+
+		if constexpr (std::same_as<Cardinality, Single>) {
+			return gs.empty() ? std::nullopt : std::optional<ElementTypeT<Geometry, AttrMode>>(gs.front());
+		} else {
+			return gs;
+		}
+	}
+
+	/// Returns geometries in the provided file that are convertible to Geometry.
+	/// \pre canRead(path)
+	template <
+		class Cardinality,
+		class Geometry,
+		class AttrMode,
 		class OutputIterator,
 		class Traits = BasicIpeReaderTraits<Geometry>
 	>
-		requires IpeReaderTraits<Geometry, OutputIterator, Traits>
+		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
 	void read(std::filesystem::path path, OutputIterator out) {
 		readHelper(path, [&](ipe::Page* page, int i) {
 			ipe::Object* object = page->object(i);
-			Traits::convert(*object, out);
-			return false;
-		});
-	}
+			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
+				auto convertedSomething = Traits::convert(*object, out);
+				if constexpr (std::same_as<Cardinality, Single>) {
+					return convertedSomething; // stop if a geometry is found
+				} else {
+					return false;
+				}
+			} else {
+				auto attributes = getAttributes(page, i);
 
-	/// Returns a vector with all geometries in the provided file that are convertible to Geometry.
-	/// \pre canRead(path)
-	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
-	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	std::vector<Geometry> readV(std::filesystem::path path) {
-		std::vector<Geometry> gs;
-		read<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>(path, std::back_inserter(gs));
-		return gs;
-	}
-
-	/// Returns the first geometry in the provided file that is convertible to Geometry.
-	/// \pre canRead(path)
-	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
-	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	std::optional<Geometry> readSingle(std::filesystem::path path) {
-		std::vector<Geometry> gs;
-
-		readHelper(path, [&](ipe::Page* page, int i) {
-			ipe::Object* object = page->object(i);
-			Traits::convert(*object, std::back_inserter(gs));
-			return !gs.empty(); // stop if a geometry is found
-		});
-
-		return gs.empty() ? std::nullopt : std::optional<Geometry>(gs[0]);
-	}
-
-	/// Returns geometries in the provided file that are convertible to Geometry including their attributes.
-	/// Outputs Feature<Geometry>.
-	/// \pre canRead(path)
-	template <class Geometry, class OutputIterator, class Traits = BasicIpeReaderTraits<Geometry>>
-	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits> 
-	void readWithAttributes(std::filesystem::path path, OutputIterator out) {
-		readHelper(path, [&](ipe::Page* page, int i) {
-			ipe::Object* object = page->object(i);
-			auto attributes = getAttributes(page, i);
-
-			std::vector<Geometry> gs;
-			Traits::convert(*object, std::back_inserter(gs));
-			for (auto& g : gs) {
-				*out++ = GeometricFeature<Geometry>(std::move(g), attributes);
+				std::vector<Geometry> temps;
+				Traits::convert(*object, std::back_inserter(temps));
+				for (auto& t : temps) {
+					*out++ = GeometricFeature<Geometry>(std::move(t), attributes);
+				}
+				if constexpr (std::same_as<Cardinality, Single>) {
+					return !temps.empty(); // stop if a geometry is found
+				} else {
+					return false;
+				}
 			}
-			return false;
 		});
-	}
-
-	/// Returns a vector with all geometries in the provided file that are convertible to Geometry including their attributes.
-	/// \pre canRead(path)
-	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
-	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	std::vector<GeometricFeature<Geometry>> readWithAttributesV(std::filesystem::path path) {
-		std::vector<GeometricFeature<Geometry>> gs;
-		readWithAttributes<Geometry, std::back_insert_iterator<std::vector<GeometricFeature<Geometry>>>, Traits>(path, std::back_inserter(gs));
-		return gs;
-	}
-
-	/// Returns the first feature in the provided file that is convertible to Geometry.
-	/// \pre canRead(path)
-	template <class Geometry, class Traits = BasicIpeReaderTraits<Geometry>>
-	requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	std::optional<GeometricFeature<Geometry>> readSingleWithAttributes(std::filesystem::path path) {
-		std::vector<GeometricFeature<Geometry>> fs;
-
-		readHelper(path, [&](ipe::Page* page, int i) {
-			ipe::Object* object = page->object(i);
-			auto attributes = getAttributes(page, i);
-
-			std::vector<Geometry> gs;
-			Traits::convert(*object, std::back_inserter(gs));
-			for (auto& g : gs) {
-				fs.emplace_back(std::move(g), attributes);
-			}
-			return !gs.empty(); // stop if a geometry is found
-		});
-
-		return fs.empty() ? std::nullopt : fs[0];
 	}
 };
 
 namespace {
 static_assert(GeometryReader<IpeReader>);
-using Out = std::back_insert_iterator<std::vector<Point<Inexact>>>;
-static_assert(GeometryReaderFor<IpeReader, Point<Inexact>, Out>);
+static_assert(GeometryReaderFor<IpeReader, Point<Inexact>>);
 }
 }

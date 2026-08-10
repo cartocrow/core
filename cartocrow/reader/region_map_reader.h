@@ -24,10 +24,10 @@ namespace cartocrow {
 namespace {
 struct RegionLabelReaderTraits {
 	template <class OutputIterator>
-	static void convert(ipe::Object& object, OutputIterator out) {
+	static bool convert(ipe::Object& object, OutputIterator out) {
 		ipe::Object::Type type = object.type();
 		if (type != ipe::Object::Type::EText) {
-			return;
+			return false;
 		}
 		ipe::Matrix matrix = object.matrix();
 		ipe::Vector translation = matrix * object.asText()->position();
@@ -35,6 +35,7 @@ struct RegionLabelReaderTraits {
 		ipe::String ipeString = object.asText()->text();
 		std::string text(ipeString.data(), ipeString.size());
 		*out++ = detail::RegionLabel{position, text, false};
+		return true;
 	}
 };
 }
