@@ -869,7 +869,6 @@ class Graph_2 {
 			auto op = std::make_unique<detail::RemoveVertex<Graph_2>>(*this, v);
 			op->redo();
 			m_history.add_operation(std::move(op));
-			m_history.end_group();
 		} else {
 			detail::RemoveVertex<Graph_2>::remove_vertex(*this, v);
 			delete v;
