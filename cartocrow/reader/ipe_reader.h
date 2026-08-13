@@ -359,6 +359,8 @@ namespace {
 // models GeometryReader and GeometryReaderFor every Geometry
 class IpeReader {
   private:
+	/// The current file that is being read.
+	std::shared_ptr<ipe::Document> m_document;
 	/// The page to read from
 	int m_pageNumber = 0;
 	/// The layer to read from. If std::nullopt then it reads from all layers.
@@ -426,6 +428,18 @@ class IpeReader {
 	/// Set the page to read from.
 	/// Note! Page indices start at zero (so pass one integer smaller than the one the ipe GUI shows).
 	void setPage(int pageNumber) {
+		if (m_pageNumber >= m_document->countPages()) {
+			std::cerr << "Page number exceeds document page count." << std::endl;
+			std::cerr << "Setting page number to last page." << std::endl;
+			m_pageNumber = m_document->countPages() - 1;
+			return;
+		} else if (m_pageNumber < 0) {
+			std::cerr << "Ppage number is negative." << std::endl;
+			std::cerr << "Setting page number to first page." << std::endl;
+			m_pageNumber = 0;
+			return;
+		}
+
 		m_pageNumber = pageNumber;
 	}
 
@@ -445,16 +459,56 @@ class IpeReader {
 	}
 
 	/// Return the number of pages in the ipe document
-	int numberOfPages(std::filesystem::path path) {
-		auto doc = loadIpeFile(path);
-		return doc->countPages();
+	int numberOfPages() const {
+		return m_document->countPages();
 	}
 
-	/// Number of layers
-	int numberOfLayer(std::filesystem::path path, int pageIndex) {
-		auto doc = loadIpeFile(path);
-		auto page = doc->page(pageIndex);
+	/// Number of layers of a page.
+	int numberOfLayers(int pageIndex) const {
+		auto page = m_document->page(pageIndex);
 		return page->countLayers();
+	}
+
+	/// Number of layers of the current page.
+	int numberOfLayers() const {
+		return numberOfLayers(m_pageNumber);
+	}
+
+	/// Returns the name of a layer of a page.
+	std::string layerName(int pageIndex, int layerIndex) const {
+		auto ln = m_document->page(pageIndex)->layer(layerIndex);
+		return std::string(ln.data(), ln.size());
+	}
+
+	/// Returns the name of a layer of the current page.
+	std::string layerName(int layerIndex) const {
+		return layerName(m_pageNumber, layerIndex);
+	}
+
+	/// Outputs the names of the layers of a page.
+	template <class OutputIterator>
+	void layerNames(int pageIndex, OutputIterator out) const {
+		for (int i = 0; i < numberOfLayers(pageIndex); ++i) {
+			*out++ = layerName(i);
+		}
+	}
+
+	/// Returns the names of the layers of a page.
+	std::vector<std::string> layerNames(int pageIndex) const {
+		std::vector<std::string> names;
+		layerNames(pageIndex, std::back_inserter(names));
+		return names;
+	}
+
+	/// Outputs the names of the layers of the current page.
+	template <class OutputIterator>
+	void layerNames(OutputIterator out) const {
+		return layerNames(m_pageNumber, out);
+	}
+
+	/// Returns the names of the layers of the current page.
+	std::vector<std::string> layerNames() const {
+		return layerNames(m_pageNumber);
 	}
 
   private:
@@ -466,7 +520,8 @@ class IpeReader {
 				if (layerIndex != *layerIndexP)
 					return true; // object is not on layer so we skip
 			} else if (auto* layerNameP = std::get_if<std::string>(&*m_layer)) {
-				if (*page->layer(layerIndex).data() != *layerNameP->c_str()) {
+				auto ln = page->layer(layerIndex);
+				if (std::string(ln.data(), ln.size()) != *layerNameP) {
 					return true;
 				}
 			}
@@ -504,20 +559,8 @@ class IpeReader {
 	}
 
 	/// If handle returns true the parsing stops.
-	void readHelper(std::filesystem::path path, std::function<bool(ipe::Page*, int)> handle) {
-		std::shared_ptr<ipe::Document> document = IpeReader::loadIpeFile(path);
-
-		if (m_pageNumber >= document->countPages()) {
-			std::cerr << "Current page number exceeds document page count." << std::endl;
-			std::cerr << "Setting page number to last page." << std::endl;
-			m_pageNumber = document->countPages() - 1;
-		} else if (m_pageNumber < 0) {
-			std::cerr << "Current page number is negative." << std::endl;
-			std::cerr << "Setting page number to first page." << std::endl;
-			m_pageNumber = 0;
-		}
-
-		ipe::Page* page = document->page(m_pageNumber);
+	void readHelper(std::function<bool(ipe::Page*, int)> handle) {
+		ipe::Page* page = m_document->page(m_pageNumber);
 
 		for (int i = 0; i < page->count(); ++i) {
 			if (skipObject(page, i))
@@ -530,16 +573,19 @@ class IpeReader {
   public:
 
 	// ===== Reader methods =====
+	IpeReader(const std::filesystem::path& filename) {
+		m_document = loadIpeFile(filename);
+	}
 
 	/// If it exists, return the well-known text representation (WKT) of the coordinate reference system
-	std::optional<std::string> readSpatialReference(std::filesystem::path path) {
+	std::optional<std::string> readSpatialReference() {
 		return std::nullopt;
 	}
 
 	/// Returns whether the reader can parse the given file.
 	/// Currently only checks the file extension.
 	// todo: actually try to parse to ipe document?
-	bool canRead(std::filesystem::path path) {
+	static bool canRead(std::filesystem::path path) {
 		return path.extension() == ".ipe";
 	}
 
@@ -552,10 +598,10 @@ class IpeReader {
 		class Traits = BasicIpeReaderTraits<Geometry>
 	>
 		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	ReadResultT<Geometry, AttrMode, Cardinality> read(std::filesystem::path path) {
+	ReadResultT<Geometry, AttrMode, Cardinality> read() {
 		std::vector<ElementTypeT<Geometry, AttrMode>> gs;
 
-		readHelper(path, [&](ipe::Page* page, int i) {
+		readHelper([&](ipe::Page* page, int i) {
 			ipe::Object* object = page->object(i);
 			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
 				Traits::convert(*object, std::back_inserter(gs));
@@ -597,8 +643,8 @@ class IpeReader {
 		class Traits = BasicIpeReaderTraits<Geometry>
 	>
 		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	void read(std::filesystem::path path, OutputIterator out) {
-		readHelper(path, [&](ipe::Page* page, int i) {
+	void read(OutputIterator out) {
+		readHelper([&](ipe::Page* page, int i) {
 			ipe::Object* object = page->object(i);
 			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
 				auto convertedSomething = Traits::convert(*object, out);

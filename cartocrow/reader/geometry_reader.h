@@ -26,10 +26,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace cartocrow {
 template <class R> concept GeometryReader = requires(R reader, std::filesystem::path path) {
 	/// If it exists, return the well-known text representation (WKT) of the coordinate reference system
-	{reader.readSpatialReference(path)}->std::same_as<std::optional<std::string>>;
+	{reader.readSpatialReference()}->std::same_as<std::optional<std::string>>;
 
 	/// Returns whether the reader can parse the given file.
-	{reader.canRead(path)}->std::same_as<bool>;
+	{R::canRead(path)}->std::same_as<bool>;
 };
 
 struct Single {};
@@ -75,32 +75,32 @@ using ReadResultT =
 //GeometryReader R
 template <class  R, class Geometry>
 concept GeometryReaderFor =
-    GeometryReader<R> && requires(R reader, std::filesystem::path path, std::back_insert_iterator<std::vector<Geometry>> outG, 
+    GeometryReader<R> && requires(R reader, std::back_insert_iterator<std::vector<Geometry>> outG, 
 		std::back_insert_iterator<std::vector<GeometricFeature<Geometry>>> outGF) {
 
 	/// Returns all geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
-	reader.template read<Multiple, Geometry, WithoutAttributes>(path, outG);
+	reader.template read<Multiple, Geometry, WithoutAttributes>(outG);
 
 	/// Returns a vector with all geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template read<Multiple, Geometry, WithoutAttributes>(path)}->std::same_as<std::vector<Geometry>>;
+	{reader.template read<Multiple, Geometry, WithoutAttributes>()}->std::same_as<std::vector<Geometry>>;
 
 	/// Returns the first geometry in the provided file that is convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template read<Single, Geometry, WithoutAttributes>(path)}->std::same_as<std::optional<Geometry>>;
+	{reader.template read<Single, Geometry, WithoutAttributes>()}->std::same_as<std::optional<Geometry>>;
 
 	/// Returns geometries in the provided file that are convertible to Geometry including their attributes.
 	/// Outputs Feature<Geometry>.
 	/// \pre canRead(path)
-	reader.template read<Multiple, Geometry, WithAttributes>(path, outGF);
+	reader.template read<Multiple, Geometry, WithAttributes>(outGF);
 
 	/// Returns a vector with all geometries in the provided file that are convertible to Geometry including their attributes.
 	/// \pre canRead(path)
-	{reader.template read<Multiple, Geometry, WithAttributes>(path)}->std::same_as<std::vector<GeometricFeature<Geometry>>>;
+	{reader.template read<Multiple, Geometry, WithAttributes>()}->std::same_as<std::vector<GeometricFeature<Geometry>>>;
 
 	/// Returns the first feature in the provided file that is convertible to Geometry.
 	/// \pre canRead(path)
-	{reader.template read<Single, Geometry, WithAttributes>(path)}->std::same_as<std::optional<GeometricFeature<Geometry>>>;
+	{reader.template read<Single, Geometry, WithAttributes>()}->std::same_as<std::optional<GeometricFeature<Geometry>>>;
 };
 }
