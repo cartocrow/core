@@ -8,6 +8,7 @@ set(HEADERS
 	gdal_conversion.h
 	boundary_map_reader.h
 	region_map_reader.h
+	linear_object_reader.h
 )
 
 add_library(reader ${SOURCES})

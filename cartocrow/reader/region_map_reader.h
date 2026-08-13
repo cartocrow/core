@@ -24,7 +24,9 @@ namespace cartocrow {
 namespace {
 struct RegionLabelReaderTraits {
 	template <class OutputIterator>
-	static bool convert(ipe::Object& object, OutputIterator out) {
+	static bool convert(const IpeObject& ipeObject, OutputIterator out) {
+		auto [page, index] = ipeObject;
+		auto& object = *page->object(index);
 		ipe::Object::Type type = object.type();
 		if (type != ipe::Object::Type::EText) {
 			return false;

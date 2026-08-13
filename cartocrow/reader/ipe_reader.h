@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
 #include "geometry_reader.h"
+#include "linear_object_reader.h"
 #include "../core/core.h"
 #include "../core/ellipse.h"
 #include "../core/polyline.h"
@@ -39,10 +40,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <ipegeo.h>
 
 namespace cartocrow {
+namespace {
+/// We use this as the object type: page and object index. 
+/// We need a reference to the page to determine whether the layer of an object.
+using IpeObject = std::pair<ipe::Page*, int>;
+}
+
 template <class Geometry, class OutputIterator, class Traits>
-concept IpeReaderTraits = requires(ipe::Object& o, OutputIterator out) {
-	{ Traits::template convert(o, out) }->std::same_as<bool>;
-};
+concept IpeReaderTraits =
+    LinearObjectReaderTraits<
+        IpeObject,
+        Geometry,
+        OutputIterator,
+        Traits>;
 
 // todo: make a RenderPath reader traits that parses everything to a render path?
 
@@ -315,9 +325,11 @@ struct IpeReaderIntermediateGeometryTraits {
 	}
 
 	template <class OutputIterator>
-	static bool convert(ipe::Object& o, OutputIterator out) {
+	static bool convert(const IpeObject& ipeObject, OutputIterator out) {
 		std::vector<IntermediateIpeGeometry> intermediates;
-		convertToIntermediate(o, std::back_inserter(intermediates));
+
+		auto [page, index] = ipeObject;
+		convertToIntermediate(*page->object(index), std::back_inserter(intermediates));
 
 		for (const auto& intermediate : intermediates) {
 			Converter::convert(intermediate, out);
@@ -357,7 +369,7 @@ namespace {
 }
 
 // models GeometryReader and GeometryReaderFor every Geometry
-class IpeReader {
+class IpeReader : public LinearObjectReader<std::pair<ipe::Page*, int>, BasicIpeReaderTraits> {
   private:
 	/// The current file that is being read.
 	std::shared_ptr<ipe::Document> m_document;
@@ -443,6 +455,8 @@ class IpeReader {
 		m_pageNumber = pageNumber;
 	}
 
+	// Todo: make the layer filters more flexible, so that layers can be toggled separately to be read or ignored.
+
 	/// Removes the layer filter so that objects are read from all layers.
 	void removeLayerFilter() {
 		m_layer = std::nullopt;
@@ -513,7 +527,8 @@ class IpeReader {
 
   private:
 	/// Whether to skip the ipe object with index i in the given page.
-	bool skipObject(ipe::Page* page, int i) const {
+	bool skipObject(const IpeObject& obj) const override {
+		auto [page, i] = obj;
 		if (m_layer.has_value()) {
 			auto layerIndex = page->layerOf(i);
 			if (auto* layerIndexP = std::get_if<int>(&*m_layer)) {
@@ -529,7 +544,9 @@ class IpeReader {
 		return false;
 	}
 
-	GeometryAttributes getAttributes(ipe::Page* page, int i) const {
+	GeometryAttributes getAttributes(const IpeObject& obj) const override {
+		auto [page, i] = obj;
+
 		// There is no nice way to get all attributes that are relevant for an object, the logic is all in the saveAsXml function.
 		// So for now we convert to xml and parse that. This is not so efficient because the entire geometry is also exported to xml.
 
@@ -559,19 +576,19 @@ class IpeReader {
 	}
 
 	/// If handle returns true the parsing stops.
-	void readHelper(std::function<bool(ipe::Page*, int)> handle) {
+	void readHelper(std::function<bool(const IpeObject&)> handle) override {
 		ipe::Page* page = m_document->page(m_pageNumber);
 
 		for (int i = 0; i < page->count(); ++i) {
-			if (skipObject(page, i))
+			IpeObject obj(page, i);
+			if (skipObject(obj))
 				continue;
-			if (handle(page, i))
+			if (handle(obj))
 				break;
 		}
 	}
 
   public:
-
 	// ===== Reader methods =====
 	IpeReader(const std::filesystem::path& filename) {
 		m_document = loadIpeFile(filename);
@@ -587,87 +604,6 @@ class IpeReader {
 	// todo: actually try to parse to ipe document?
 	static bool canRead(std::filesystem::path path) {
 		return path.extension() == ".ipe";
-	}
-
-	/// Returns geometries in the provided file that are convertible to Geometry.
-	/// \pre canRead(path)
-	template <
-		class Cardinality,
-		class Geometry,
-		class AttrMode,
-		class Traits = BasicIpeReaderTraits<Geometry>
-	>
-		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	ReadResultT<Geometry, AttrMode, Cardinality> read() {
-		std::vector<ElementTypeT<Geometry, AttrMode>> gs;
-
-		readHelper([&](ipe::Page* page, int i) {
-			ipe::Object* object = page->object(i);
-			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
-				Traits::convert(*object, std::back_inserter(gs));
-				if constexpr (std::same_as<Cardinality, Single>) {
-					return !gs.empty(); // stop if a geometry is found
-				} else {
-					return false;
-				}
-			} else {
-				auto attributes = getAttributes(page, i);
-
-				std::vector<Geometry> temps;
-				Traits::convert(*object, std::back_inserter(temps));
-				for (auto& t : temps) {
-					gs.emplace_back(std::move(t), attributes);
-				}
-				if constexpr (std::same_as<Cardinality, Single>) {
-					return !gs.empty(); // stop if a geometry is found
-				} else {
-					return false;
-				}
-			}
-		});
-
-		if constexpr (std::same_as<Cardinality, Single>) {
-			return gs.empty() ? std::nullopt : std::optional<ElementTypeT<Geometry, AttrMode>>(gs.front());
-		} else {
-			return gs;
-		}
-	}
-
-	/// Returns geometries in the provided file that are convertible to Geometry.
-	/// \pre canRead(path)
-	template <
-		class Cardinality,
-		class Geometry,
-		class AttrMode,
-		class OutputIterator,
-		class Traits = BasicIpeReaderTraits<Geometry>
-	>
-		requires IpeReaderTraits<Geometry, std::back_insert_iterator<std::vector<Geometry>>, Traits>
-	void read(OutputIterator out) {
-		readHelper([&](ipe::Page* page, int i) {
-			ipe::Object* object = page->object(i);
-			if constexpr (std::same_as<AttrMode, WithoutAttributes>) {
-				auto convertedSomething = Traits::convert(*object, out);
-				if constexpr (std::same_as<Cardinality, Single>) {
-					return convertedSomething; // stop if a geometry is found
-				} else {
-					return false;
-				}
-			} else {
-				auto attributes = getAttributes(page, i);
-
-				std::vector<Geometry> temps;
-				Traits::convert(*object, std::back_inserter(temps));
-				for (auto& t : temps) {
-					*out++ = GeometricFeature<Geometry>(std::move(t), attributes);
-				}
-				if constexpr (std::same_as<Cardinality, Single>) {
-					return !temps.empty(); // stop if a geometry is found
-				} else {
-					return false;
-				}
-			}
-		});
 	}
 };
 
