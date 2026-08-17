@@ -23,8 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "cartocrow/core/polyline_set.h"
 #include "cartocrow/core/polygon_set_raw.h"
 #include "cartocrow/core/point_set.h"
+#include "cartocrow/core/straight_geometry.h"
 
 namespace cartocrow {
+StraightGeometry<Inexact> ogrGeometryToStraightGeometry(const OGRGeometry& geometry);
 PolygonSetRaw<Inexact> ogrMultiPolygonToPolygonSetRaw(const OGRMultiPolygon& multiPolygon);
 PolygonSetRaw<Inexact> ogrPolygonToPolygonSetRaw(const OGRPolygon& ogrPolygon);
 Polygon<Inexact> ogrLinearRingToPolygon(const OGRLinearRing& ogrLinearRing);

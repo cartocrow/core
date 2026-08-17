@@ -23,7 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using namespace cartocrow;
 using namespace renderer;
 
-TEST_CASE("Reading points") {
+// Test case names need to be unique, so we prefix with IpeReader.
+#define TEST_CASE_(name) TEST_CASE("[IpeReader] " name, "[IpeReader]")
+
+TEST_CASE_("Reading points") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 
 	auto points = ipeReader.read<Multiple, Point<Inexact>, WithoutAttributes>();
@@ -39,7 +42,7 @@ TEST_CASE("Reading points") {
 	CHECK(exists({0, 64}));
 }
 
-TEST_CASE("Reading a polygon") {
+TEST_CASE_("Reading a polygon") {
 	std::vector<Point<Inexact>> points({{144.544, 155.39}, {123.907, 113.135}, {178.446, 67.44}, {249.199, 124.927}});
 	Polygon<Inexact> expectedPolygon(points.begin(), points.end());
 
@@ -48,7 +51,7 @@ TEST_CASE("Reading a polygon") {
 	CHECK(parsedPolygon == expectedPolygon);
 }
 
-TEST_CASE("Reading points and a polygon") {
+TEST_CASE_("Reading points and a polygon") {
 	std::vector<Point<Inexact>> points(
 	    {{144.544, 155.39}, {123.907, 113.135}, {178.446, 67.44}, {249.199, 124.927}});
 	Polygon<Inexact> expectedPolygon(points.begin(), points.end());
@@ -71,7 +74,7 @@ TEST_CASE("Reading points and a polygon") {
 	CHECK(exists(Point<Inexact>{0, 64}));
 }
 
-TEST_CASE("Reading polygon sets") {
+TEST_CASE_("Reading polygon sets") {
 	// Test whether polygon is automatically converted to PolygonSetRaw.
 	// The file contains 2 polygon sets and 1 polygon.
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
@@ -84,7 +87,7 @@ TEST_CASE("Reading polygon sets") {
 	CHECK(pgns.size() == 1);
 }
 
-TEST_CASE("Reading polylines, segments, Bézier curves and splines") {
+TEST_CASE_("Reading polylines, segments, Bézier curves and splines") {
 	// Test open geometries.
 	// The file contains a line segment, a polyline, a cubic Bézier curve, a cubic Bézier spline.
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
@@ -103,7 +106,7 @@ TEST_CASE("Reading polylines, segments, Bézier curves and splines") {
 	CHECK(cbss.size() == 4); // should return all
 }
 
-TEST_CASE("Read points from specific layer") {
+TEST_CASE_("Read points from specific layer") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 	ipeReader.setPage(3);
 
@@ -119,7 +122,7 @@ TEST_CASE("Read points from specific layer") {
 	CHECK(greenPoints.size() == 8);
 }
 
-TEST_CASE("Read with output iterator") {
+TEST_CASE_("Read with output iterator") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 	ipeReader.setPage(3);
 
@@ -136,14 +139,14 @@ TEST_CASE("Read with output iterator") {
 	CHECK(allPoints.size() == 27);
 }
 
-TEST_CASE("Read layer names") {
+TEST_CASE_("Read layer names") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 	ipeReader.setPage(3);
 	auto names = ipeReader.layerNames();
 	CHECK(names == std::vector<std::string>({"blue", "red", "green"}));
 }
 
-TEST_CASE("Read attributes") {
+TEST_CASE_("Read attributes") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 	ipeReader.setPage(3);
 
@@ -176,7 +179,7 @@ TEST_CASE("Read attributes") {
 	}
 }
 
-TEST_CASE("Read ellipses and circles") {
+TEST_CASE_("Read ellipses and circles") {
 	IpeReader ipeReader("data/test_ipe_reader.ipe");
 	ipeReader.setPage(4);
 
@@ -190,7 +193,7 @@ TEST_CASE("Read ellipses and circles") {
 	CHECK(ellipses.size() == 5);
 }
 
-//TEST_CASE("Manual check: load and save test_ipe_reader.ipe; geometries should be equivalent") {
+//TEST_CASE_("Manual check: load and save test_ipe_reader.ipe; geometries should be equivalent") {
 //	IpeReader ipeReader;
 //	IpeRenderer ipeRenderer;
 //	

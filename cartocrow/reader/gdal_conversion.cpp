@@ -18,6 +18,40 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gdal_conversion.h"
 
 namespace cartocrow {
+StraightGeometry<Inexact> ogrGeometryToStraightGeometry(const OGRGeometry& geometry) {
+    switch (wkbFlatten(geometry.getGeometryType())) {
+        case wkbMultiPolygon: {
+            const OGRMultiPolygon *poMultiPolygon = geometry.toMultiPolygon();
+            return ogrMultiPolygonToPolygonSetRaw(*poMultiPolygon);
+        }
+        case wkbPolygon: {
+            const OGRPolygon *poly = geometry.toPolygon();
+            return ogrPolygonToPolygonWithHoles(*poly);
+        }
+        case wkbLinearRing: {
+            const OGRLinearRing *poly = geometry.toLinearRing();
+            return ogrLinearRingToPolygon(*poly);
+        }
+        case wkbLineString: {
+            const OGRLineString *pl = geometry.toLineString();
+            return ogrLineStringToPolyline(*pl);
+        }
+        case wkbMultiLineString: {
+            const OGRMultiLineString *pl = geometry.toMultiLineString();
+            return ogrMultiLineStringToPolylineSet(*pl);
+        }
+        case wkbPoint: {
+            const OGRPoint* p = geometry.toPoint();
+            return ogrPointToPoint(*p);
+        }
+        case wkbMultiPoint: {
+            const OGRMultiPoint* mp = geometry.toMultiPoint();
+            return ogrMultiPointToPointSet(*mp);
+        }
+        default: throw std::runtime_error("Unhandled geometry type: " + std::string(geometry.getGeometryName()));
+    }
+}
+
 PolygonSetRaw<Inexact> ogrMultiPolygonToPolygonSetRaw(const OGRMultiPolygon& multiPolygon) {
 	PolygonSetRaw<Inexact> polygonSet;
     for (const auto& poly : multiPolygon) {

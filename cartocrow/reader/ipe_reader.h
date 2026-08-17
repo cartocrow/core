@@ -369,7 +369,7 @@ namespace {
 }
 
 // models GeometryReader and GeometryReaderFor every Geometry
-class IpeReader : public LinearObjectReader<std::pair<ipe::Page*, int>, BasicIpeReaderTraits> {
+class IpeReader : public LinearObjectReader<IpeObject, BasicIpeReaderTraits> {
   private:
 	/// The current file that is being read.
 	std::shared_ptr<ipe::Document> m_document;
