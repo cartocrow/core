@@ -308,11 +308,11 @@ void IpeRenderer::drawText(const Point<Inexact>& p, const std::string& text, boo
 			fullLabelText << "\\fontsize{" << *m_style.m_fontSize << "}{" << (*m_style.m_fontSize + 2) << "}";
 		}
 		fullLabelText << "\\selectfont ";
-		fullLabelText << text;
+		fullLabelText << labelText;
 	} else if (m_style.m_bold) {
-		fullLabelText << "\\textbf{" << text << "}";
+		fullLabelText << "\\textbf{" << labelText << "}";
 	} else {
-		fullLabelText << text;
+		fullLabelText << labelText;
 	}
 	ipe::Text* label = new ipe::Text(getAttributesForStyle(), fullLabelText.str().data(),
 	                                 ipe::Vector(p.x(), p.y()), ipe::Text::TextType::ELabel);
