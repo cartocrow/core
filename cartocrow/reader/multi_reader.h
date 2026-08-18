@@ -119,7 +119,7 @@ public:
 	ReadResultT<Geometry, AttrMode, Cardinality> read() {
         return std::visit([](auto& reader) {
             using Reader = std::decay_t<decltype(reader)>;
-            return reader.read<Cardinality, Geometry, AttrMode, typename Traits::template ReaderTraits<Reader>>();
+            return reader.template read<Cardinality, Geometry, AttrMode, typename Traits::template ReaderTraits<Reader>>();
         }, m_reader);
 	}
 
@@ -135,7 +135,7 @@ public:
 	void read(OutputIterator out) {
 		return std::visit([&out](auto& reader) {
             using Reader = std::decay_t<decltype(reader)>;
-            return reader.read<Cardinality, Geometry, AttrMode, OutputIterator, typename Traits::template ReaderTraits<Reader>>(out);
+            return reader.template read<Cardinality, Geometry, AttrMode, OutputIterator, typename Traits::template ReaderTraits<Reader>>(out);
         }, m_reader);
 	}
 };
