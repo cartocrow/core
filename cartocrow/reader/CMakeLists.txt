@@ -1,15 +1,17 @@
 set(SOURCES
-	gdal_conversion.cpp
 	boundary_map_reader.cpp
+	gdal_conversion.cpp
 	region_map_reader.cpp
 )
 set(HEADERS
-	ipe_reader.h
+	boundary_map_reader.h	
 	gdal_conversion.h
-	boundary_map_reader.h
-	region_map_reader.h
+	gdal_reader.h
+	geometry_reader.h
+	ipe_reader.h
 	linear_object_reader.h
 	multi_reader.h
+	region_map_reader.h
 )
 
 add_library(reader ${SOURCES})

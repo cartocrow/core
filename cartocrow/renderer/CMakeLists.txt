@@ -1,45 +1,43 @@
-if(EMSCRIPTEN)
-set(SOURCES
+set(SHARED_SOURCES
+	function_painting.cpp
 	geometry_renderer.cpp
 	painting_renderer.cpp
-	function_painting.cpp
 	render_path.cpp
 	svg_renderer.cpp
 	)
-else()
-set(SOURCES
-	geometry_renderer.cpp
-	painting_renderer.cpp
-	function_painting.cpp
-	render_path.cpp
-	svg_renderer.cpp
-
-	ipe_renderer.cpp
+set(NATIVE_SOURCES
 	geometry_widget.cpp
+	ipe_renderer.cpp
 )
-endif()
-if(EMSCRIPTEN)
-set(HEADERS
+set(SHARED_HEADERS
+	function_painting.h
 	geometry_painting.h
 	geometry_renderer.h
 	painting_renderer.h
-	function_painting.h
 	render_path.h
 	svg_renderer.h
 	voronoi_drawer.h
 )
-else()
-set(HEADERS
-	geometry_painting.h
-	geometry_renderer.h
-	painting_renderer.h
-	function_painting.h
-	render_path.h
-	svg_renderer.h
-	voronoi_drawer.h
-
+set(NATIVE_HEADERS
 	ipe_renderer.h
 	geometry_widget.h
+)
+
+if (EMSCRIPTEN)
+set(SOURCES
+    ${SHARED_SOURCES}
+)
+set(HEADERS
+    ${SHARED_HEADERS}
+)
+else()
+set(SOURCES
+    ${SHARED_SOURCES}
+    ${NATIVE_SOURCES}
+)
+set(HEADERS
+    ${SHARED_HEADERS}
+    ${NATIVE_HEADERS}
 )
 endif()
 
