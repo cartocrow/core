@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QPolygon>
 #include <QSlider>
 #include <QToolButton>
+#include <QScreen>
 
 #include <cmath>
 #include <limits>
@@ -694,6 +695,10 @@ QPainterPath GeometryWidget::renderPathToQt(const RenderPath& p) {
     return path;
 }
 
+QPainter& GeometryWidget::painter() {
+	return *m_painter;
+}
+
 void GeometryWidget::draw(const RenderPath& p) {
 	setupPainter();
 	QPainterPath path = renderPathToQt(p);
@@ -710,8 +715,46 @@ void GeometryWidget::draw(const RenderPath& p) {
 void GeometryWidget::drawText(const Point<Inexact>& p, const std::string& text, bool escape) {
 	setupPainter();
 	QPointF p2 = convertPoint(p);
-	m_painter->drawText(QRectF(p2 - QPointF{500, 250}, p2 + QPointF{500, 250}), m_textAlignment,
+
+	auto font = m_font;
+
+	if (m_textScalesWithZoom) {
+		double pixelSize = font.pixelSize() * zoomFactor();
+		double pointSize = pixelSize * 72.0 / screen()->logicalDotsPerInch();
+		if (pointSize < 0.375) return;
+		font.setPointSizeF(pointSize);
+	}
+
+	QFontMetricsF m(font);
+
+	double w = m.horizontalAdvance(QString::fromStdString(text));
+	double h = m.height();
+
+	QRectF rect;
+	double x = p2.x();
+	double y = p2.y();
+
+	if (m_textAlignment & Qt::AlignHCenter)
+		rect.setLeft(x - w / 2);
+	else if (m_textAlignment & Qt::AlignRight)
+		rect.setLeft(x - w);
+	else
+		rect.setLeft(x);
+
+	if (m_textAlignment & Qt::AlignVCenter)
+		rect.setTop(y - h / 2);
+	else if (m_textAlignment & Qt::AlignBottom)
+		rect.setTop(y - h);
+	else
+		rect.setTop(y);
+
+	rect.setSize(QSizeF(w, h));
+
+	m_painter->save();
+	m_painter->setFont(font);
+	m_painter->drawText(rect, m_textAlignment,
 	                    QString::fromStdString(text));
+	m_painter->restore();
 }
 
 void GeometryWidget::drawImage(const Box& target, const QImage& image, const Box& source, Qt::ImageConversionFlag flags) {
@@ -869,6 +912,30 @@ void GeometryWidget::setVerticalTextAlignment(VerticalTextAlignment alignment) {
 	}
 }
 
+void GeometryWidget::setFontFamily(std::string fontFamily) {
+	m_font.setFamily(QString::fromStdString(fontFamily));
+}
+
+void GeometryWidget::setFontSize(double fontSize) {
+	m_font.setPixelSize(fontSize);
+}
+
+void GeometryWidget::setFontWeight(bool bold) {
+	m_font.setBold(bold);
+}
+
+void GeometryWidget::useDefaultFont() {
+	m_font = {};
+}
+
+void GeometryWidget::setTextFont(QFont font) {
+	m_font = font;
+}
+
+void GeometryWidget::setTextScaling(bool textScalesWithZoom) {
+	m_textScalesWithZoom = textScalesWithZoom;
+}
+
 void GeometryWidget::addPainting(std::shared_ptr<GeometryPainting> painting, const std::string& name) {
 	bool visible = !m_invisibleLayerNames.contains(name);
 	m_paintings.push_back(DrawnPainting{painting, name, visible});
@@ -972,7 +1039,9 @@ void GeometryWidget::saveToIpe() {
 
 	IpeRenderer renderer;
 	for (const DrawnPainting& painting : m_paintings) {
-		renderer.addPainting(painting.m_painting, painting.name);
+		if (painting.visible) {
+			renderer.addPainting(painting.m_painting, painting.name);
+		}
 	}
 	std::filesystem::path filePath = fileName.toStdString();
 	if (!filePath.has_extension()) {
@@ -989,7 +1058,9 @@ void GeometryWidget::saveToSvg() {
 
 	SvgRenderer renderer;
 	for (const DrawnPainting& painting : m_paintings) {
-		renderer.addPainting(painting.m_painting, painting.name);
+		if (painting.visible) {
+			renderer.addPainting(painting.m_painting, painting.name);
+		}
 	}
 	auto windowSize = size();
 	auto bottomLeft = inverseConvertPoint(QPoint(0, windowSize.height()));

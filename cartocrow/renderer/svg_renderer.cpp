@@ -201,6 +201,10 @@ void SvgRenderer::draw(const RenderPath& p) {
 void SvgRenderer::drawText(const Point<Inexact>& p, const std::string& text, bool escape) {
 	m_out << "<text text-anchor=\"" << m_style.m_horizontalTextAlignment
           << "\" dominant-baseline=\"" << m_style.m_verticalTextAlignment
+		  << (m_style.m_fontFamily.has_value() ? ("\" font-family=\"" + *m_style.m_fontFamily) : "")
+		  << (m_style.m_fontSize.has_value() ? ("\" font-size=\"" + std::to_string(*m_style.m_fontSize)) : "")
+		  << (m_style.m_bold ? ("\" font-weight=\"bold") : "")
+		  << "\" fill=\"" << m_style.m_strokeColor // ipe and qt use stroke color for text color so we do the same here
           << "\" x=\"" << p.x() << "\" y=\""
 	      << -p.y() << "\">" << (escape ? escapeForSvg(text) : text) << "</text>\n";
 }
@@ -405,4 +409,20 @@ void SvgRenderer::setVerticalTextAlignment(VerticalTextAlignment alignment) {
     }
 }
 
+void SvgRenderer::setFontFamily(std::string fontFamily) {
+	m_style.m_fontFamily = fontFamily;
+}
+
+void SvgRenderer::setFontSize(double fontSize) {
+	m_style.m_fontSize = fontSize;
+}
+
+void SvgRenderer::setFontWeight(bool bold) {
+	m_style.m_bold = bold;
+}
+
+void SvgRenderer::useDefaultFont() { 
+	m_style.m_fontSize = std::nullopt;
+	m_style.m_fontFamily = std::nullopt;
+}
 } // namespace cartocrow::renderer

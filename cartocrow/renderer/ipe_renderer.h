@@ -56,6 +56,12 @@ struct IpeRendererStyle {
 	ipe::THorizontalAlignment m_horizontalTextAlignment = ipe::EAlignHCenter;
 	/// Vertical text alignment
 	ipe::TVerticalAlignment m_verticalTextAlignment = ipe::EAlignVCenter;
+	/// Bold text?
+	bool m_bold = false;
+	/// Local (per text element) font size
+	std::optional<double> m_fontSize = std::nullopt;
+	/// Local (per text element) font family
+	std::optional<std::string> m_fontFamily = std::nullopt;
 };
 
 /// Ipe specialization of the GeometryRenderer.
@@ -114,6 +120,10 @@ class IpeRenderer : public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
+	void setFontFamily(std::string fontFamily) override;
+	void setFontSize(double fontSize) override;
+	void useDefaultFont() override;
+	void setFontWeight(bool bold) override;
 
 	void setPreamble(const std::string& preamble);
 
@@ -172,6 +182,8 @@ class IpeRenderer : public GeometryRenderer {
 	int m_pageIndex = 0;
 	/// Latex preamble
 	std::string m_preamble;
+	/// Whether a font size or family was set; the fontspec package then needs to be added to the preamble.
+	bool m_usedLocalFont = false;
 };
 
 } // namespace cartocrow::renderer

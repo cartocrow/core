@@ -57,6 +57,12 @@ struct SvgRendererStyle {
     std::string m_horizontalTextAlignment = "middle";
     /// Vertical text alignment.
     std::string m_verticalTextAlignment = "middle";
+	/// Bold text?
+	bool m_bold = false;
+	/// Local (per text element) font size
+	std::optional<double> m_fontSize = std::nullopt;
+	/// Local (per text element) font family
+	std::optional<std::string> m_fontFamily = std::nullopt;
 };
 
 /// SVG specialization of the GeometryRenderer.
@@ -96,6 +102,10 @@ class SvgRenderer : public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
+	void setFontFamily(std::string fontFamily) override;
+	void setFontSize(double fontSize) override;
+	void setFontWeight(bool bold) override;
+	void useDefaultFont() override;
 
 	void addPainting(const std::shared_ptr<GeometryPainting>& painting);
 	void addPainting(const std::shared_ptr<GeometryPainting>& painting, const std::string& name);

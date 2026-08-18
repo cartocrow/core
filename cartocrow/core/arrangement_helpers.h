@@ -130,7 +130,7 @@ PolygonWithHoles<K> face_to_polygon_with_holes(FaceH fh) {
 /// Constructs a general polygon with holes from a face of an arrangement.
 /// The Traits class should be a model of ArrangementDirectionalXMonotoneTraits_2.
 template <class Traits, class FaceH>
-CGAL::General_polygon_with_holes_2<Traits> face_to_general_polygon_with_holes(FaceH fh) {
+CGAL::General_polygon_with_holes_2<CGAL::General_polygon_2<Traits>> face_to_general_polygon_with_holes(FaceH fh) {
 	CGAL::General_polygon_2<Traits> outer;
 	if (fh->has_outer_ccb()) {
 		outer = ccb_to_general_polygon<Traits>(fh->outer_ccb());
