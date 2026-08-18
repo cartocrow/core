@@ -42,6 +42,8 @@ CubicBezierCurve::CubicBezierCurve(Point<K> source, Point<K> target) :
 					 source + (target - source) * 2.0 / 3.0,
                      target) {}
 
+CubicBezierCurve::CubicBezierCurve(Segment<K> seg) : CubicBezierCurve(seg.source(), seg.target()) {}
+
 Point<Inexact> CubicBezierCurve::source() const {
 	return m_p0;
 }
@@ -345,6 +347,19 @@ bool CubicBezierCurve::selfIntersects(double threshold) const {
 }
 
 CubicBezierSpline::CubicBezierSpline() {};
+
+CubicBezierSpline::CubicBezierSpline(Segment<K> segment) {
+	appendCurve(segment);
+}
+
+CubicBezierSpline::CubicBezierSpline(CubicBezierCurve curve)
+    : m_c({curve.source(), curve.sourceControl(), curve.targetControl(), curve.target()}) {};
+
+CubicBezierSpline::CubicBezierSpline(Polyline<K> polyline) {
+	for (int i = 0; i < polyline.num_edges(); ++i) {
+		appendCurve(polyline.vertex(i), polyline.vertex(i + 1));
+	}
+}
 
 void CubicBezierSpline::appendCurve(const Curve& curve) {
 	for (int i = 0; i < 4; ++i) {

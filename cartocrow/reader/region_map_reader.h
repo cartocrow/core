@@ -17,9 +17,31 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "ipe_reader.h"
 #include "cartocrow/core/region_map.h"
 
 namespace cartocrow {
+namespace {
+struct RegionLabelReaderTraits {
+	template <class OutputIterator>
+	static bool convert(const IpeObject& ipeObject, OutputIterator out) {
+		auto [page, index] = ipeObject;
+		auto& object = *page->object(index);
+		ipe::Object::Type type = object.type();
+		if (type != ipe::Object::Type::EText) {
+			return false;
+		}
+		ipe::Matrix matrix = object.matrix();
+		ipe::Vector translation = matrix * object.asText()->position();
+		Point<Exact> position(translation.x, translation.y);
+		ipe::String ipeString = object.asText()->text();
+		std::string text(ipeString.data(), ipeString.size());
+		*out++ = detail::RegionLabel{position, text, false};
+		return true;
+	}
+};
+}
+
 /// Creates a \ref RegionMap from a region map in Ipe format.
 ///
 /// The Ipe figure to be read needs to contain a single page. This page

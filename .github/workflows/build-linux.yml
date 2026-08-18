@@ -66,7 +66,7 @@ jobs:
       run: |
         cmake -DCMAKE_BUILD_TYPE=Release -S . -B build-release
         cmake --build build-release
-    - name: Test CartoCrow core in debug mode
+    - name: Test CartoCrow core in Debug mode
       run: build-debug/test/cartocrow_test
-    - name: Test CartoCrow core in debug mode
+    - name: Test CartoCrow core in Release mode
       run: build-release/test/cartocrow_test

@@ -5,6 +5,9 @@ set(TEST_SOURCES "cartocrow_test.cpp"
 	"core/region_arrangement.cpp"
 	"core/region_map.cpp"
 	"renderer/ipe_renderer.cpp"
+	"reader/ipe_reader.cpp"
+	"reader/gdal_reader.cpp"
+	"reader/multi_reader.cpp"
 )
 
 
