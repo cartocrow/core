@@ -17,6 +17,9 @@ class LinearObjectReader {
 	virtual GeometryAttributes getAttributes(const Object& obj) const = 0;
 
   public:
+	template<class Geometry>
+    using DefaultTraits = DefaultReaderTraits<Geometry>;
+
 	/// Returns geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)
 	template <

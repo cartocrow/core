@@ -594,6 +594,14 @@ class IpeReader : public LinearObjectReader<IpeObject, BasicIpeReaderTraits> {
 		m_document = loadIpeFile(filename);
 	}
 
+	/// Load a different file. 
+	/// Resets the page number and layer focus.
+	void load(const std::filesystem::path& filename) {
+		m_document = loadIpeFile(filename);
+		m_pageNumber = 0;
+		m_layer = std::nullopt;
+	}
+
 	/// If it exists, return the well-known text representation (WKT) of the coordinate reference system
 	std::optional<std::string> readSpatialReference() {
 		return std::nullopt;

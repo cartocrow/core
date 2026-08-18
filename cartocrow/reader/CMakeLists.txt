@@ -9,6 +9,7 @@ set(HEADERS
 	boundary_map_reader.h
 	region_map_reader.h
 	linear_object_reader.h
+	multi_reader.h
 )
 
 add_library(reader ${SOURCES})

@@ -30,6 +30,9 @@ template <class R> concept GeometryReader = requires(R reader, std::filesystem::
 
 	/// Returns whether the reader can parse the given file.
 	{R::canRead(path)}->std::same_as<bool>;
+
+	{R(path)}->std::same_as<R>;
+	{reader.load(path)};
 };
 
 struct Single {};
@@ -77,6 +80,8 @@ template <class  R, class Geometry>
 concept GeometryReaderFor =
     GeometryReader<R> && requires(R reader, std::back_insert_iterator<std::vector<Geometry>> outG, 
 		std::back_insert_iterator<std::vector<GeometricFeature<Geometry>>> outGF) {
+	/// The reader needs to have a templated default traits type-alias.
+	typename R::template DefaultTraits<Geometry>;
 
 	/// Returns all geometries in the provided file that are convertible to Geometry.
 	/// \pre canRead(path)

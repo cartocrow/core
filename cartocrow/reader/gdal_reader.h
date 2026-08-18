@@ -89,7 +89,6 @@ class GDALReader : public LinearObjectReader<GDALObject, BasicGDALReaderTraits> 
   public:
 	GDALReader(const std::filesystem::path& path) {
 		GDALAllRegister();
-		GDALDataset *poDS;
 
 		m_dataset = (GDALDataset*) GDALOpenEx( path.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr );
 		if( m_dataset == nullptr ) {
@@ -200,9 +199,17 @@ class GDALReader : public LinearObjectReader<GDALObject, BasicGDALReaderTraits> 
 		return false;
 	}
   public:
-	
-
 	// ===== Reader methods =====
+	/// Load a different file. 
+	/// Resets the page number and layer focus.
+	void load(const std::filesystem::path& path) {
+		m_dataset = (GDALDataset*) GDALOpenEx( path.string().c_str(), GDAL_OF_VECTOR, nullptr, nullptr, nullptr );
+		if( m_dataset == nullptr ) {
+			printf( "GDAL open failed.\n" );
+			exit( 1 );
+		}
+	}
+
 	/// If it exists, return the well-known text representation (WKT) of the coordinate reference system
 	std::optional<std::string> readSpatialReference() {
 		auto* poLayer = getLayer();
