@@ -214,6 +214,7 @@ class GDALReader : public LinearObjectReader<GDALObject, BasicGDALReaderTraits> 
 	std::optional<std::string> readSpatialReference() {
 		auto* poLayer = getLayer();
 		poLayer->ResetReading();
+		if (poLayer->GetSpatialRef() == nullptr) return std::nullopt;
 		return poLayer->GetSpatialRef()->exportToWkt();
 	}
 
