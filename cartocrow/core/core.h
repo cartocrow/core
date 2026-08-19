@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,12 +13,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Created by tvl (t.vanlankveld@esciencecenter.nl) on 07-11-2019
 */
 
-#ifndef CARTOCROW_CORE_CORE_H
-#define CARTOCROW_CORE_CORE_H
+#pragma once
 
 #include <CGAL/Arr_segment_traits_2.h>
 #include <CGAL/Arrangement_2.h>
@@ -235,5 +230,3 @@ struct Color {
 constexpr Number<Inexact> two_pi = std::numbers::pi * 2;
 
 } // namespace cartocrow
-
-#endif //CARTOCROW_CORE_CORE_H
