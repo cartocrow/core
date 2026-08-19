@@ -5,10 +5,10 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 if (EMSCRIPTEN)
     message(STATUS "Using CartoCrow for WebAssembly / Emscripten")
     add_compile_definitions(
-            USE_BOOST_HEADERS=1
             CGAL_ALWAYS_ROUND_TO_NEAREST
             CGAL_DISABLE_GMP=ON
     )
+    add_compile_options(-sUSE_BOOST_HEADERS=1)
     add_compile_options(-fwasm-exceptions)
     add_link_options(-g -fwasm-exceptions -lembind)
     if (NOT DEFINED EMSCRIPTEN_INCLUDE_DIR)
