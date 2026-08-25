@@ -20,16 +20,23 @@ TEST_CASE("Graph static vertex map") {
 
 	CHECK(map[u] == 1);
 	CHECK(map[v] == 1);
+
+	int a = map[u];
 		
-	//for (auto& v : g.vertices()) {
-	//	map[&v] = 7;
-	//}
+	for (V v : g.vertices()) {
+		map[v] = 7;
+	}
 
 	map[u] = 3;
 	map[v] = 2;
 
+	int b = map[u];
+
 	CHECK(map[u] == 3);
 	CHECK(map[v] == 2);
+
+	CHECK(a == 1);
+	CHECK(b == 3);
 }
 
 TEST_CASE("Graph vertex map") {

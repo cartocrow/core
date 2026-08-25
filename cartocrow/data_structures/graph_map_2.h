@@ -91,7 +91,8 @@ class Graph_vertex_map : public Graph_map<G, typename G::Vertex_handle, T> {
 	}
 };
 
-template <class G, typename T> class Graph_static_vertex_map {
+template <class G, typename T>
+class Graph_static_vertex_map {
 
   public:
 	using Vertex_handle = G::Vertex_handle;
@@ -100,16 +101,32 @@ template <class G, typename T> class Graph_static_vertex_map {
 	std::vector<T> m_vec;
 
   public:
+	Graph_static_vertex_map(const G& graph) {
+		m_vec.resize(graph.number_of_vertices());
+	}
+
 	Graph_static_vertex_map(const G& graph, const T init) {
 		m_vec.resize(graph.number_of_vertices(), init);
 	}
 
-	T& operator[](const Vertex_handle vtx) {
+	std::vector<T>::reference operator[](const Vertex_handle vtx) {
 		return m_vec[vtx->graph_index()];
 	}
 
 	void assign(const T v) {
 		m_vec.assign(m_vec.size(), v);
+	}
+
+	void resize(size_t size) {
+		m_vec.resize(size);
+	}
+
+	void resize(size_t size, const T init) {
+		m_vec.resize(size, init);
+	}
+	
+	size_t size() {
+		return m_vec.size();
 	}
 };
 
@@ -146,16 +163,32 @@ template <class G, typename T> class Graph_static_edge_map {
 	std::vector<T> m_vec;
 
   public:
+	Graph_static_edge_map(const G& graph) {
+		m_vec.resize(graph.number_of_edges());
+	}
+
 	Graph_static_edge_map(const G& graph, const T init) {
 		m_vec.resize(graph.number_of_edges(), init);
 	}
 
-	T& operator[](const Edge_handle edge) {
+	std::vector<T>::reference operator[](const Edge_handle edge) {
 		return m_vec[edge->graph_index()];
 	}
 
 	void assign(const T v) {
 		m_vec.assign(m_vec.size(), v);
+	}
+
+	void resize(size_t size) {
+		m_vec.resize(size);
+	}
+
+	void resize(size_t size, const T init) {
+		m_vec.resize(size, init);
+	}
+
+	size_t size() {
+		return m_vec.size();
 	}
 };
 
@@ -192,12 +225,32 @@ template <class G, typename T> class Graph_static_path_map {
 	std::vector<T> m_vec;
 
   public:
+	Graph_static_path_map(const G& graph) {
+		m_vec.resize(graph.number_of_edges());
+	}
+
 	Graph_static_path_map(const G& graph, const T init) {
 		m_vec.resize(graph.number_of_edges(), init);
 	}
 
-	T& operator[](const Path_handle edge) {
+	std::vector<T>::reference operator[](const Path_handle edge) {
 		return m_vec[edge->graph_index()];
+	}
+
+	void assign(const T v) {
+		m_vec.assign(m_vec.size(), v);
+	}
+
+	void resize(size_t size) {
+		m_vec.resize(size);
+	}
+
+	void resize(size_t size, const T init) {
+		m_vec.resize(size, init);
+	}
+
+	size_t size() {
+		return m_vec.size();
 	}
 };
 
@@ -205,8 +258,8 @@ template <class G> class Graph_path_index_map {
   public:
 	using Path_handle = G::Path_handle;
 
-	size_t operator[](const Path_handle edge) {
-		return edge->graph_index();
+	size_t operator[](const Path_handle path) {
+		return path->graph_index();
 	}
 };
 
