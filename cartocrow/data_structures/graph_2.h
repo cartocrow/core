@@ -1042,28 +1042,27 @@ class Graph_2 {
 		return result;
 	}
 
-	Edge_handle merge_vertex(
-	    Vertex_handle v) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
-		return merge_vertex(v, Curve_2(v->prev()->point(), v->next()->point()));
+	Edge_handle merge_vertex(Vertex_handle v, bool keepIncoming = true)
+	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return merge_vertex(v, Curve_2(v->prev()->point(), v->next()->point()), keepIncoming);
 	}
 
-	/// Merge an edge with the one that precedes it and replace them with newCurve.
-	/// Returns the handle of the new edge.
-	/// \pre Source vertex of edge e has degree 2.
-	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve) requires GraphTraits::oriented {
+	/// Merges the two edges of a vertex into a single edge, erasing the vertex
+	/// \pre Vertex v has degree 2 and its two neighbors are not neighbors
+	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve, bool keepIncoming = true) requires GraphTraits::oriented {
 		assert(m_initialized);
 		assert(v->degree() == 2);
 		assert(!v->prev()->is_neighbor_of(v->next()));
 
-		Edge_handle result = v->incoming();
+		Edge_handle result = keepIncoming ? v->incoming() : v->outgoing();
 
 		if constexpr (GraphTraits::historic) {
 			auto op = std::make_unique<detail::MergeVertex<Graph_2>>(
-			    *this, v, CurveTraits::representation(newCurve));
+			    *this, v, keepIncoming, CurveTraits::representation(newCurve));
 			op->redo();
 			m_history.add_operation(std::move(op));
 		} else {
-			detail::MergeVertex<Graph_2>::merge_vertex(*this, v,
+			detail::MergeVertex<Graph_2>::merge_vertex(*this, v, keepIncoming, 
 			                                           CurveTraits::representation(newCurve));
 		}
 
@@ -1071,35 +1070,43 @@ class Graph_2 {
 		return result;
 	}
 
-	Vertex_handle subdivide_edge(Edge_handle e, Point_2 newPoint)
+	Vertex_handle subdivide_edge(Edge_handle e, Point_2 newPoint, bool newOut = true)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
 		return subdivide_edge(e, Curve_2(e->source()->m_point, newPoint),
-		                      Curve_2(newPoint, e->target()->m_point));
+		                      Curve_2(newPoint, e->target()->m_point), newOut);
 	}
 
 	/// Replace an edge by two edges
 	/// Returns the handle of the newly created vertex.
-	Vertex_handle subdivide_edge(Edge_handle e, Curve_2 toNewPoint,
-	                             Curve_2 fromNewPoint) requires GraphTraits::oriented {
+	/// If newOut = true, then the new edge is the outgoing edge of this vertex; otherwise, it is the incoming edge.
+	Vertex_handle subdivide_edge(Edge_handle e, Curve_2 toNewPoint, Curve_2 fromNewPoint,
+	                             bool newOut = true) requires GraphTraits::oriented {
 		assert(m_initialized);
 		assert(toNewPoint.target() == fromNewPoint.source());
 
 		Vertex_handle new_v = new Vertex(toNewPoint.target(), m_vertices.size());
-		Edge_handle new_e = new Edge(new_v, e->target(), m_edges.size(), fromNewPoint);
+
+		Edge_handle new_e;
+		if (newOut) {
+			new_e = new Edge(new_v, e->target(), m_edges.size(), fromNewPoint);
+			new_v->add_incident(e);
+			new_v->add_incident(new_e);
+		} else {
+			new_e = new Edge(e->source(), new_v, m_edges.size(), toNewPoint);
+			new_v->add_incident(new_e);
+			new_v->add_incident(e);
+		}
 		if constexpr (GraphTraits::decomposed) {
 			new_e->m_path = e->m_path;
 		}
-		new_v->add_incident(e);
-		new_v->add_incident(new_e);
 
 		if constexpr (GraphTraits::historic) {
 			auto op = std::make_unique<detail::SubdivideEdge<Graph_2>>(
-			    *this, e, new_e, CurveTraits::representation(toNewPoint));
+			    *this, e, new_e, newOut, CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
 			op->redo();
 			m_history.add_operation(std::move(op));
 		} else {
-			detail::SubdivideEdge<Graph_2>::subdivide_edge(*this, e, new_e,
-			                                               CurveTraits::representation(toNewPoint));
+			detail::SubdivideEdge<Graph_2>::subdivide_edge(*this, e, new_e, newOut, CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
 		}
 
 		assert(verify_graph_structure());

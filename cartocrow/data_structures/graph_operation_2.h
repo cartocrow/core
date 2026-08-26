@@ -422,29 +422,53 @@ template <class G> class MergeVertex : public Operation {
 	Vertex_handle m_vertex;
 	Curve_representation m_curve_rep;
 	size_t m_index;
+	bool m_keep_incoming;
 
-	static void merge_vertex_no_curve(G& g, Vertex_handle v, const size_t index) {
+	static void merge_vertex_no_curve(G& g, Vertex_handle v, const size_t index,
+	                                  const bool keepIncoming) {
 
 		Edge_handle incoming = v->incoming();
 		Edge_handle outgoing = v->outgoing();
 
-		// remove v and v.outgoing from graph
+		// remove v and v.outgoing/incoming from graph
 		g.remove_vertex_from_container(v);
-		g.remove_edge_from_container(outgoing);
 
-		// redirect v.incoming to v.next
-		Vertex_handle target = outgoing->target();
-		target->m_incident[index] = incoming;
-		incoming->m_target = target;
+		if (keepIncoming) {
+			g.remove_edge_from_container(outgoing);
 
-		// update paths
-		if constexpr (G::Graph_traits::decomposed) {
-			Path_handle p = outgoing->m_path;
-			if (p->m_start == outgoing) {
-				assert(p->m_cyclic);
-				p->m_start = outgoing->next();
-			} else if (p->m_end == outgoing) {
-				p->m_end = incoming;
+			// redirect v.incoming to v.next
+			Vertex_handle target = outgoing->target();
+			target->m_incident[index] = incoming;
+			incoming->m_target = target;
+
+			// update paths
+			if constexpr (G::Graph_traits::decomposed) {
+				Path_handle p = outgoing->m_path;
+				if (p->m_start == outgoing) {
+					assert(p->m_cyclic);
+					p->m_start = outgoing->next();
+				} else if (p->m_end == outgoing) {
+					p->m_end = incoming;
+				}
+			}
+
+		} else {
+			g.remove_edge_from_container(incoming);
+
+			// redirect v.outgoing to v.prev
+			Vertex_handle source = incoming->source();
+			source->m_incident[index] = outgoing;
+			outgoing->m_source = source;
+
+			// update paths
+			if constexpr (G::Graph_traits::decomposed) {
+				Path_handle p = incoming->m_path;
+				if (p->m_end == incoming) {
+					assert(p->m_cyclic);
+					p->m_end = incoming->prev();
+				} else if (p->m_start == incoming) {
+					p->m_start = outgoing;
+				}
 			}
 		}
 	}
@@ -455,21 +479,27 @@ template <class G> class MergeVertex : public Operation {
 	}
 
   public:
-	MergeVertex(G& g, Vertex_handle v, Curve_representation curve_rep)
-	    : m_graph(g), m_vertex(std::move(v)), m_curve_rep(std::move(curve_rep)) {
+	MergeVertex(G& g, Vertex_handle v, bool keepIncoming, Curve_representation curve_rep)
+	    : m_graph(g), m_vertex(std::move(v)), m_curve_rep(std::move(curve_rep)), m_keep_incoming(keepIncoming) {
 		m_index = m_vertex->outgoing()->find_target_incident_index();
 	}
 
 	void forget_past() override {
-		delete m_vertex->outgoing();
+		if (m_keep_incoming)
+			delete m_vertex->outgoing();
+		else
+			delete m_vertex->incoming();
 		delete m_vertex;
 	}
 
-	static void merge_vertex(G& g, Vertex_handle v, Curve_representation curve_rep) {
+	static void merge_vertex(G& g, Vertex_handle v, const bool keepIncoming, Curve_representation curve_rep) {
 
-		size_t index = v->outgoing()->find_target_incident_index();
-		merge_vertex_no_curve(g, v, index);
-		v->incoming()->m_representation = curve_rep;
+		size_t index = keepIncoming ? v->outgoing()->find_target_incident_index() : v->incoming()->find_source_incident_index();
+		merge_vertex_no_curve(g, v, index, keepIncoming);
+		if (keepIncoming)
+			v->incoming()->m_representation = curve_rep;
+		else
+			v->outgoing()->m_representation = curve_rep;
 		maintain_traits(g, v);
 	}
 
@@ -478,33 +508,64 @@ template <class G> class MergeVertex : public Operation {
 		Edge_handle incoming = m_vertex->incoming();
 		Edge_handle outgoing = m_vertex->outgoing();
 
-		// update curve
-		std::swap(incoming->m_representation, m_curve_rep);
+		if (m_keep_incoming) {
 
-		// redirect v.incoming to v
-		incoming->m_target = m_vertex;
+			// update curve
+			std::swap(incoming->m_representation, m_curve_rep);
 
-		// add v and v.outgoing to graph
-		m_graph.insert_vertex_into_container(m_vertex);
-		m_graph.insert_edge_into_container(outgoing);
+			// redirect v.incoming to v
+			incoming->m_target = m_vertex;
 
-		outgoing->target()->m_incident[m_index] = outgoing;
+			// add v and v.outgoing to graph
+			m_graph.insert_vertex_into_container(m_vertex);
+			m_graph.insert_edge_into_container(outgoing);
 
-		// TODO: maintain sorted trait
+			outgoing->target()->m_incident[m_index] = outgoing;
 
-		if constexpr (G::Graph_traits::decomposed) {
-			Path_handle p = outgoing->m_path;
-			if (p->m_cyclic && p->m_start == outgoing->next()) {
-				p->m_start = outgoing;
-			} else if (p->m_end == incoming) {
-				p->m_end = outgoing;
+			// TODO: maintain sorted trait
+
+			if constexpr (G::Graph_traits::decomposed) {
+				Path_handle p = outgoing->m_path;
+				if (p->m_cyclic && p->m_start == outgoing->next()) {
+					p->m_start = outgoing;
+				} else if (p->m_end == incoming) {
+					p->m_end = outgoing;
+				}
+			}
+		} else {
+
+			// update curve
+			std::swap(outgoing->m_representation, m_curve_rep);
+
+			// redirect v.outgoing to v
+			outgoing->m_source = m_vertex;
+
+			// add v and v.incoming to graph
+			m_graph.insert_vertex_into_container(m_vertex);
+			m_graph.insert_edge_into_container(incoming);
+
+			incoming->source()->m_incident[m_index] = incoming;
+
+			// TODO: maintain sorted trait
+
+			if constexpr (G::Graph_traits::decomposed) {
+				Path_handle p = outgoing->m_path;
+				if (p->m_cyclic && p->m_end == incoming->prev()) {
+					p->m_end = incoming;
+				} else if (p->m_start == outgoing) {
+					p->m_start = incoming;
+				}
 			}
 		}
 	}
 
 	void redo() override {
-		merge_vertex_no_curve(m_graph, m_vertex, m_index);
-		std::swap(m_vertex->incoming()->m_representation, m_curve_rep);
+		merge_vertex_no_curve(m_graph, m_vertex, m_index, m_keep_incoming);
+		if (m_keep_incoming) {
+			std::swap(m_vertex->incoming()->m_representation, m_curve_rep);
+		} else {
+			std::swap(m_vertex->outgoing()->m_representation, m_curve_rep);
+		}
 		maintain_traits(m_graph, m_vertex);
 	}
 };
@@ -715,21 +776,34 @@ template <class G> class SubdivideEdge : public Operation {
 	Edge_handle m_edge, m_new_edge;
 	Curve_representation m_curve_rep;
 	size_t m_index;
+	bool m_new_out;
 
-	static void subdivide_edge_no_curve(G& g, Edge_handle e, Edge_handle new_e, const size_t index) {
-		Vertex_handle v = new_e->source();
+	static void subdivide_edge_no_curve(G& g, Edge_handle e, Edge_handle new_e, const size_t index,
+	                                    bool newOut) {
+		Vertex_handle v = newOut ? new_e->source() : new_e->target();
 
 		g.insert_vertex_into_container(v);
 		g.insert_edge_into_container(new_e);
 
-		e->m_target = v;
-		new_e->target()->m_incident[index] = new_e;
+		if (newOut) {
+			e->m_target = v;
+			new_e->target()->m_incident[index] = new_e;
+		} else {
+			e->m_source = v;
+			new_e->source()->m_incident[index] = new_e;
+		}
 
 		if constexpr (G::Graph_traits::decomposed) {
 
 			Path_handle p = new_e->m_path;
-			if (p->m_end == e) {
-				p->m_end = new_e;
+			if (newOut) {
+				if (p->m_end == e) {
+					p->m_end = new_e;
+				}
+			} else {
+				if (p->m_start == e) {
+					p->m_start = new_e;
+				}
 			}
 		}
 	}
@@ -739,32 +813,42 @@ template <class G> class SubdivideEdge : public Operation {
 	}
 
   public:
-	SubdivideEdge(G& g, Edge_handle e, Edge_handle new_e, Curve_representation crep)
-	    : m_graph(g), m_edge(e), m_new_edge(new_e), m_curve_rep(crep) {
-		m_index = m_edge->find_target_incident_index();
+	SubdivideEdge(G& g, Edge_handle e, Edge_handle new_e, bool newOut, Curve_representation crep)
+	    : m_graph(g), m_edge(e), m_new_edge(new_e), m_curve_rep(crep), m_new_out(newOut) {
+		m_index =
+		    newOut ? m_edge->find_target_incident_index() : m_edge->find_source_incident_index();
 	}
 
 	void forget_future() override {
-		delete m_new_edge->source();
+		if (m_new_out)
+			delete m_new_edge->source();
+		else
+			delete m_new_edge->target();
 		delete m_new_edge;
 	}
 
-	static void subdivide_edge(G& g, Edge_handle e, Edge_handle new_e, Curve_representation crep) {
-		size_t index = e->find_target_incident_index();
-		subdivide_edge_no_curve(g, e, new_e, index);
+	static void subdivide_edge(G& g, Edge_handle e, Edge_handle new_e, bool newOut,
+	                           Curve_representation crep) {
+		size_t index = newOut ? e->find_target_incident_index() : e->find_source_incident_index();
+		subdivide_edge_no_curve(g, e, new_e, index, newOut);
 		e->m_representation = std::move(crep);
 		maintain_traits(g, e, new_e);
 	}
 
 	void undo() override {
-		Vertex_handle v = m_new_edge->source();
+		Vertex_handle v = m_new_out ? m_new_edge->source() : m_new_edge->target();
 
 		m_graph.remove_vertex_from_container(v);
 		m_graph.remove_edge_from_container(m_new_edge);
 
-		m_edge->m_target = m_new_edge->target();
-		m_edge->target()->m_incident[m_index] = m_edge;
-				
+		if (m_new_out) {
+			m_edge->m_target = m_new_edge->target();
+			m_edge->target()->m_incident[m_index] = m_edge;
+		} else {
+			m_edge->m_source = m_new_edge->source();
+			m_edge->source()->m_incident[m_index] = m_edge;
+		}
+
 		std::swap(m_edge->m_representation, m_curve_rep);
 
 		// TODO: maintain sorted
@@ -772,13 +856,19 @@ template <class G> class SubdivideEdge : public Operation {
 		if constexpr (G::Graph_traits::decomposed) {
 
 			Path_handle p = m_new_edge->m_path;
-			if (p->m_end == m_new_edge) {
-				p->m_end = m_edge;
+			if (m_new_out) {
+				if (p->m_end == m_new_edge) {
+					p->m_end = m_edge;
+				}
+			} else {
+				if (p->m_start == m_new_edge) {
+					p->m_start = m_edge;
+				}
 			}
 		}
 	}
 	void redo() override {
-		subdivide_edge_no_curve(m_graph, m_edge, m_new_edge, m_index);
+		subdivide_edge_no_curve(m_graph, m_edge, m_new_edge, m_index, m_new_out);
 		std::swap(m_edge->m_representation, m_curve_rep);
 		maintain_traits(m_graph, m_new_edge, m_new_edge);
 	}
