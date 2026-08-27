@@ -1042,14 +1042,43 @@ class Graph_2 {
 		return result;
 	}
 
+	/// Merges the provided edge wit the next, removing the given edge and its target. The remaining edge is returned.
+	Edge_handle merge_with_next(
+	    Edge_handle e) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return merge_vertex(e->target(), false);
+	}
+
+	/// Merges the provided edge wit the previous, removing the given edge and its source. The remaining edge is returned.
+	Edge_handle merge_with_prev(
+	    Edge_handle e) requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return merge_vertex(e->source(), true);
+	}
+
+	/// Merges the two edges of a vertex into a single edge, erasing the vertex.
+	/// If keepIncoming = true, then the vertex's outgoing edge is removed; otherwise, its incoming edge is removed.
+	/// \pre Vertex v has degree 2 and its two neighbors are not neighbors	
 	Edge_handle merge_vertex(Vertex_handle v, bool keepIncoming = true)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
 		return merge_vertex(v, Curve_2(v->prev()->point(), v->next()->point()), keepIncoming);
 	}
 
-	/// Merges the two edges of a vertex into a single edge, erasing the vertex
+	/// Merges the provided edge wit the next, removing the given edge and its target. The remaining edge is returned.
+	Edge_handle merge_with_next(Edge_handle e, Curve_2 newCurve,
+	                            bool keepIncoming = true) requires GraphTraits::oriented {
+		return merge_vertex(e->target(), newCurve, false);
+	}
+
+	/// Merges the provided edge wit the previous, removing the given edge and its source. The remaining edge is returned.
+	Edge_handle merge_with_prev(Edge_handle e, Curve_2 newCurve,
+	                            bool keepIncoming = true) requires GraphTraits::oriented {
+		return merge_vertex(e->source(), newCurve, true);
+	}
+
+	/// Merges the two edges of a vertex into a single edge, erasing the vertex.
+	/// If keepIncoming = true, then the vertex's outgoing edge is removed; otherwise, its incoming edge is removed.
 	/// \pre Vertex v has degree 2 and its two neighbors are not neighbors
-	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve, bool keepIncoming = true) requires GraphTraits::oriented {
+	Edge_handle merge_vertex(Vertex_handle v, Curve_2 newCurve,
+	                         bool keepIncoming = true) requires GraphTraits::oriented {
 		assert(m_initialized);
 		assert(v->degree() == 2);
 		assert(!v->prev()->is_neighbor_of(v->next()));
@@ -1062,7 +1091,7 @@ class Graph_2 {
 			op->redo();
 			m_history.add_operation(std::move(op));
 		} else {
-			detail::MergeVertex<Graph_2>::merge_vertex(*this, v, keepIncoming, 
+			detail::MergeVertex<Graph_2>::merge_vertex(*this, v, keepIncoming,
 			                                           CurveTraits::representation(newCurve));
 		}
 
@@ -1070,15 +1099,50 @@ class Graph_2 {
 		return result;
 	}
 
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The outgoing edge of this vertex is the provided edge.
+	/// The incoming edge of this vertex is a new edge.
+	Vertex_handle subdivide_edge_at_source(Edge_handle e, Point_2 newPoint)
+	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return subdivide_edge(e, newPoint, false);
+	}
+
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The incoming edge of this vertex is the provided edge.
+	/// The outgoing edge of this vertex is a new edge.
+	Vertex_handle subdivide_edge_at_target(Edge_handle e, Point_2 newPoint)
+	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return subdivide_edge(e, newPoint, true);
+	}
+
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The incoming edge of this vertex is the provided edge, if newOut = true, and the new edge otherwise.
+	/// The outgoing edge of this vertex is a new edge, if newOut = true, and the provided edge otherwise.	
 	Vertex_handle subdivide_edge(Edge_handle e, Point_2 newPoint, bool newOut = true)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
 		return subdivide_edge(e, Curve_2(e->source()->m_point, newPoint),
 		                      Curve_2(newPoint, e->target()->m_point), newOut);
 	}
 
-	/// Replace an edge by two edges
-	/// Returns the handle of the newly created vertex.
-	/// If newOut = true, then the new edge is the outgoing edge of this vertex; otherwise, it is the incoming edge.
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The outgoing edge of this vertex is the provided edge.
+	/// The incoming edge of this vertex is a new edge.
+	Vertex_handle subdivide_edge_at_source(Edge_handle e, Curve_2 toNewPoint, Curve_2 fromNewPoint)
+	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return subdivide_edge(e, toNewPoint, fromNewPoint, false);
+	}
+
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The incoming edge of this vertex is the provided edge.
+	/// The outgoing edge of this vertex is a new edge.
+	Vertex_handle subdivide_edge_at_target(Edge_handle e, Curve_2 toNewPoint, Curve_2 fromNewPoint)
+	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
+		return subdivide_edge(e, toNewPoint, fromNewPoint, true);
+	}
+
+	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
+	/// The incoming edge of this vertex is the provided edge, if newOut = true, and the new edge otherwise.
+	/// The outgoing edge of this vertex is a new edge, if newOut = true, and the provided edge otherwise.
 	Vertex_handle subdivide_edge(Edge_handle e, Curve_2 toNewPoint, Curve_2 fromNewPoint,
 	                             bool newOut = true) requires GraphTraits::oriented {
 		assert(m_initialized);
@@ -1102,11 +1166,14 @@ class Graph_2 {
 
 		if constexpr (GraphTraits::historic) {
 			auto op = std::make_unique<detail::SubdivideEdge<Graph_2>>(
-			    *this, e, new_e, newOut, CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
+			    *this, e, new_e, newOut,
+			    CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
 			op->redo();
 			m_history.add_operation(std::move(op));
 		} else {
-			detail::SubdivideEdge<Graph_2>::subdivide_edge(*this, e, new_e, newOut, CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
+			detail::SubdivideEdge<Graph_2>::subdivide_edge(
+			    *this, e, new_e, newOut,
+			    CurveTraits::representation(newOut ? toNewPoint : fromNewPoint));
 		}
 
 		assert(verify_graph_structure());
