@@ -8,6 +8,7 @@ set(TEST_SOURCES "cartocrow_test.cpp"
 	"reader/ipe_reader.cpp"
 	"reader/gdal_reader.cpp"
 	"reader/multi_reader.cpp"
+	"reader/geojson_reader.cpp"
 )
 
 

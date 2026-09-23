@@ -12,6 +12,7 @@ set(HEADERS
 	linear_object_reader.h
 	multi_reader.h
 	region_map_reader.h
+	geojson_reader.h
 )
 
 add_library(reader ${SOURCES})
