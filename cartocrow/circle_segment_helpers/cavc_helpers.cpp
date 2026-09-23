@@ -64,11 +64,16 @@ std::vector<CSXMCurve> xmCurves(const cavc::Polyline<double>& polyline) {
 std::variant<CSPolyline, CSPolygon> toCSPoly(const cavc::Polyline<double>& polyline) {
 	auto curves = xmCurves(polyline);
 
-	if (polyline.isClosed()) {
-		return CSPolygon(curves.begin(), curves.end());
-	} else {
-		return CSPolyline(curves.begin(), curves.end());
+	if (!polyline.isClosed()) {
+		// we currently use CavalierContours only for closed shapes
+		// but sometimes it make a loop non-closed even though it is actually fine as a closed loop
+		// so we always return a polygon for now.
+		std::cerr << "Expected a closed loop!" << std::endl;
 	}
+
+	return CSPolygon(curves.begin(), curves.end());
+
+//		return CSPolyline(curves.begin(), curves.end());
 }
 
 CSPolygon remove_degeneracies(const CSPolygon& polygon) {
