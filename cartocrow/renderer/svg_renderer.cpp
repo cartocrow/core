@@ -148,19 +148,19 @@ void SvgRenderer::draw(const CubicBezierSpline& s) {
 	std::cerr << "The SVG renderer does not support CubicBezierSplines; ignoring\n";
 }
 
-std::string renderPathToSVGCommands(const RenderPath& p) {
+std::string renderPathToSVGCommands(const RenderPath& p, bool invertY) {
     std::stringstream ss;
 
     Point<Inexact> from;
     for (RenderPath::Command c : p.commands()) {
         if (std::holds_alternative<RenderPath::MoveTo>(c)) {
             Point<Inexact> to = std::get<RenderPath::MoveTo>(c).m_to;
-            ss << "M " << to.x() << " " << -to.y() << " ";
+            ss << "M " << to.x() << " " << (invertY ? -to.y() : to.y()) << " ";
             from = to;
 
         } else if (std::holds_alternative<RenderPath::LineTo>(c)) {
             Point<Inexact> to = std::get<RenderPath::LineTo>(c).m_to;
-            ss << "L " << to.x() << " " << -to.y() << " ";
+            ss << "L " << to.x() << " " << (invertY ? -to.y() : to.y()) << " ";
             from = to;
 
         } else if (std::holds_alternative<RenderPath::ArcTo>(c)) {
@@ -172,8 +172,9 @@ std::string renderPathToSVGCommands(const RenderPath& p) {
             double rotation = 0;  // ellipse rotation; irrelevant because we draw circles only
             int largeArc = (centerOnLeft == clockwise) ? 1 : 0;
             int sweep = clockwise ? 1 : 0;
+			if (!invertY) { sweep = !sweep; }
             ss << "A " << radius << " " << radius << " " << rotation << " " << largeArc << " "
-                  << sweep << " " << to.x() << " " << -to.y() << " ";
+                  << sweep << " " << to.x() << " " << (invertY ? -to.y() : to.y()) << " ";
             from = to;
 
         } else if (std::holds_alternative<RenderPath::Close>(c)) {

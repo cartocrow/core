@@ -149,4 +149,5 @@ class SvgRenderer : public GeometryRenderer {
 	void savePaintings();
 };
 
+std::string renderPathToSVGCommands(const RenderPath& p, bool invertY = true);
 } // namespace cartocrow::renderer
