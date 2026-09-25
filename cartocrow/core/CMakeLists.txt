@@ -2,7 +2,7 @@ set(SOURCES
 	core.cpp
 	cubic_bezier.cpp
 	ellipse.cpp
-	region_arrangement.cpp
+	geometric_feature.cpp
 	point_set.cpp
 	polygon_set_raw.cpp
 	polyline.cpp

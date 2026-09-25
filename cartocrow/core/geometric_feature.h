@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "core.h"
 
 namespace cartocrow {
-using GeometryAttribute = std::variant<int, std::vector<int>, double, std::vector<double>, 
+using GeometryAttribute = std::variant<int, std::vector<int>, double, std::vector<double>,
 										std::string, std::vector<std::string>, int64_t, bool>;
 
 using GeometryAttributes = std::unordered_map<std::string, GeometryAttribute>;
@@ -29,4 +29,18 @@ template <class Geometry> struct GeometricFeature {
 	Geometry geometry;
 	GeometryAttributes attributes;
 };
+
+namespace {
+template<class... Ts>
+struct overloaded : Ts... {
+	using Ts::operator()...;
+};
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+}
+
+double to_double(const GeometryAttribute& v);
+bool convertible_to_double(const GeometryAttribute& v);
+int to_int(const GeometryAttribute& v);
+bool convertible_to_int(const GeometryAttribute& v);
 }
