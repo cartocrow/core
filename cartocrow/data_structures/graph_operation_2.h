@@ -480,8 +480,10 @@ template <class G> class MergeVertex : public Operation {
 
   public:
 	MergeVertex(G& g, Vertex_handle v, bool keepIncoming, Curve_representation curve_rep)
-	    : m_graph(g), m_vertex(std::move(v)), m_curve_rep(std::move(curve_rep)), m_keep_incoming(keepIncoming) {
-		m_index = m_vertex->outgoing()->find_target_incident_index();
+	    : m_graph(g), m_vertex(std::move(v)), m_curve_rep(std::move(curve_rep)),
+	      m_keep_incoming(keepIncoming) {
+		m_index = keepIncoming ? v->outgoing()->find_target_incident_index()
+		                       : v->incoming()->find_source_incident_index();
 	}
 
 	void forget_past() override {
@@ -492,9 +494,11 @@ template <class G> class MergeVertex : public Operation {
 		delete m_vertex;
 	}
 
-	static void merge_vertex(G& g, Vertex_handle v, const bool keepIncoming, Curve_representation curve_rep) {
+	static void merge_vertex(G& g, Vertex_handle v, const bool keepIncoming,
+	                         Curve_representation curve_rep) {
 
-		size_t index = keepIncoming ? v->outgoing()->find_target_incident_index() : v->incoming()->find_source_incident_index();
+		size_t index = keepIncoming ? v->outgoing()->find_target_incident_index()
+		                            : v->incoming()->find_source_incident_index();
 		merge_vertex_no_curve(g, v, index, keepIncoming);
 		if (keepIncoming)
 			v->incoming()->m_representation = curve_rep;
