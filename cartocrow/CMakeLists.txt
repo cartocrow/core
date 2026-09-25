@@ -13,8 +13,8 @@ endmacro(cartocrow_install_module)
 add_subdirectory(core)
 add_subdirectory(circle_segment_helpers)
 add_subdirectory(renderer)
+add_subdirectory(reader)
 if (NOT EMSCRIPTEN)
-    add_subdirectory(reader)
     add_subdirectory(widgets)
 endif()
 
@@ -34,6 +34,7 @@ else()
 		core
 		circle_segment_helpers
 		renderer
+		reader
 	)
 endif()
 
