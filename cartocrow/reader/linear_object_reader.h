@@ -5,7 +5,7 @@
 namespace cartocrow {
 template <class Object, class Geometry, class OutputIterator, class Traits>
 concept LinearObjectReaderTraits = requires(const Object& o, OutputIterator out) {
-	{ Traits::template convert(o, out) }->std::same_as<bool>;
+	{ Traits::template convert<>(o, out) }->std::same_as<bool>;
 };
 
 /// A GeometryReader that iterates over objects and converts them.
