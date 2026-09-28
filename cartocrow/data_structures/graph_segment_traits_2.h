@@ -28,6 +28,16 @@ template <class K> struct Graph_segment_curve_traits_2 {
 		return curve(start, end, rep).bbox();
 	}
 
+	static CGAL::Direction_2<Kernel> source_direction(const Point_2& start, const Point_2& end,
+		const Curve_representation_2& rep) {
+		return CGAL::Direction_2<Kernel>(end - start);
+	}
+
+	static CGAL::Direction_2<Kernel> target_direction(const Point_2& start, const Point_2& end,
+	                                                  const Curve_representation_2& rep) {
+		return CGAL::Direction_2<Kernel>(start - end);
+	}
+
 	static void reverse_representation(const Point_2& start, const Point_2& end,
 	                                   Curve_representation_2& rep) {
 		// skip

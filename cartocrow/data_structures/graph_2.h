@@ -164,15 +164,21 @@ class Graph_2 {
 	}
 
 	bool verify_traits() const {
+		bool correct = true;
 		if constexpr (GraphTraits::oriented) {
 			if (!verify_oriented())
-				return false;
+				correct = false;
 		}
 		if constexpr (GraphTraits::sorted) {
 			if (!verify_sorted())
-				return false;
+				correct = false;
 		}
-		return true;
+		if constexpr (GraphTraits::decomposed) {
+			if (!verify_decomposed()) {
+				correct = false;
+			}
+		}
+		return correct;
 	}
 
 	void ensure_oriented() requires Graph_traits::oriented {
@@ -237,13 +243,15 @@ class Graph_2 {
 	}
 
 	bool verify_oriented() const requires Graph_traits::oriented {
+		bool correct = true;
 		for (Vertex_handle v : m_vertices) {
 			if (!verify_oriented(v)) {
-				return false;
+				std::cout << "! Incorrectly oriented vertex: " << *v << std::endl;
+				correct = false;
 			}
 		}
 
-		return true;
+		return correct;
 	}
 	bool verify_oriented(Vertex_const_handle v) const requires Graph_traits::oriented {
 		if (v->degree() != 2)
@@ -273,24 +281,37 @@ class Graph_2 {
 		}
 	}
 	bool verify_sorted() const requires Graph_traits::sorted {
+		bool correct = true;
 		for (Vertex_const_handle v : m_vertices) {
 			if (!verify_sorted(v)) {
-				return false;
+				std::cout << "! Unsorted vertex: " << *v << std::endl;
+				correct = false;
 			}
 		}
-		return true;
+		return correct;
 	}
 	bool verify_sorted(Vertex_const_handle v) const requires Graph_traits::sorted {
-		if (v->degree() > 2) {
-			CGAL::Direction_2<Kernel> dir_prev =
-			    CGAL::Direction_2<Kernel>(v->neighbor(0)->m_point - v->m_point);
-			for (size_t i = 1; i < v->degree(); ++i) {
-				CGAL::Direction_2<Kernel> dir =
-				    CGAL::Direction_2<Kernel>(v->neighbor(i)->m_point - v->m_point);
-				if (dir < dir_prev) {
+		const size_t d = v->degree();
+		if (d > 2) {
+			using Dir = CGAL::Direction_2<Kernel>;
+			// TODO: this should use the tangents of the curve; in this form, it only works for straightline graphs
+			size_t min_i = 0;
+			Dir min_dir = v->incident_edge(0)->direction_at(v);
+			for (size_t i = 1; i < d; ++i) {
+				Dir dir = v->incident_edge(i)->direction_at(v);
+				if (dir < min_dir) {
+					min_dir = dir;
+					min_i = i;
+				}
+			}
+
+			Dir prev = min_dir;
+			for (size_t i = 1; i < d; ++i) {
+				Dir dir = v->incident_edge((min_i + i) % d)->direction_at(v);
+				if (prev > dir) {
 					return false;
 				}
-				dir_prev = dir;
+				prev = min_dir;
 			}
 		}
 		return true;
@@ -345,19 +366,54 @@ class Graph_2 {
 		assert(verify_decomposed());
 	}
 	bool verify_decomposed() const requires GraphTraits::decomposed {
+		bool correct = true;
 		for (Edge_handle e : m_edges) {
 			if (e->m_path == nullptr) {
-				return false;
-			}
-
-			if (e->source()->degree() == 2 && e->prev()->m_path != e->m_path) {
-				return false;
-			}
-			if (e->target()->degree() == 2 && e->next()->m_path != e->m_path) {
-				return false;
+				std::cout << "! Edge without path: " << *e << std::endl;
+				correct = false;
+			} else {
+				if (e->source()->degree() == 2 && e->prev()->m_path != e->m_path) {
+					std::cout << "! Previous edge does not match path: " << *e << std::endl;
+					correct = false;
+				}
+				if (e->target()->degree() == 2 && e->next()->m_path != e->m_path) {
+					std::cout << "! Next edge does not match path: " << *e << std::endl;
+					correct = false;
+				}
 			}
 		}
-		return true;
+		for (Path_handle p : m_paths) {
+			if (p->m_start->m_path != p) {
+				std::cout << "! First edge of path not on path: " << *p << std::endl;
+				correct = false;
+			}
+			if (p->m_end->m_path != p) {
+				std::cout << "! Last edge of path not on path: " << *p << std::endl;
+				correct = false;
+			}
+			if (p->m_cyclic) {
+				if (p->m_start->source()->degree() != 2) {
+					std::cout << "! Cyclic path does not start with degree-2 vertex: " << *p
+					          << std::endl;
+					correct = false;
+				}
+				if (p->m_end->target() != p->m_start->source()) {
+					std::cout << "! Cyclic path does not start and end at same vertex: " << *p
+					          << std::endl;
+					correct = false;
+				}
+			} else {
+				if (p->m_start->source()->degree() == 2) {
+					std::cout << "! Acyclic path starts at degree-2 vertex: " << *p << std::endl;
+					correct = false;
+				}
+				if (p->m_end->target()->degree() == 2) {
+					std::cout << "! Acyclic path ends at degree-2 vertex: " << *p << std::endl;
+					correct = false;
+				}
+			}
+		}
+		return correct;
 	}
 
 	bool verify_graph_structure() const {
@@ -1056,7 +1112,7 @@ class Graph_2 {
 
 	/// Merges the two edges of a vertex into a single edge, erasing the vertex.
 	/// If keepIncoming = true, then the vertex's outgoing edge is removed; otherwise, its incoming edge is removed.
-	/// \pre Vertex v has degree 2 and its two neighbors are not neighbors	
+	/// \pre Vertex v has degree 2 and its two neighbors are not neighbors
 	Edge_handle merge_vertex(Vertex_handle v, bool keepIncoming = true)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
 		return merge_vertex(v, Curve_2(v->prev()->point(), v->next()->point()), keepIncoming);
@@ -1117,7 +1173,7 @@ class Graph_2 {
 
 	/// Replace an edge by two edges, and returns the handle of the newly created vertex.
 	/// The incoming edge of this vertex is the provided edge, if newOut = true, and the new edge otherwise.
-	/// The outgoing edge of this vertex is a new edge, if newOut = true, and the provided edge otherwise.	
+	/// The outgoing edge of this vertex is a new edge, if newOut = true, and the provided edge otherwise.
 	Vertex_handle subdivide_edge(Edge_handle e, Point_2 newPoint, bool newOut = true)
 	    requires std::same_as<Curve_2, Segment<Kernel>>&& GraphTraits::oriented {
 		return subdivide_edge(e, Curve_2(e->source()->m_point, newPoint),
@@ -1457,7 +1513,8 @@ class Graph_2_vertex {
 	friend std::ostream&
 	operator<<(std::ostream& os,
 	           const Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
-		return os << "[" << c.m_index << " @ " << c.m_point << " ; d= " << c.m_incident.size() << "]";
+		return os << "V[" << c.m_index << " @ " << c.m_point << " ; d= " << c.m_incident.size()
+		          << "]";
 	}
 };
 
@@ -1620,10 +1677,27 @@ class Graph_2_edge {
 		return m_source->neighboring_incident_edge(this, ccw);
 	}
 
+	CGAL::Direction_2<Kernel> source_direction() const {
+		return CurveTraits::source_direction(m_source->m_point, m_target->m_point, m_representation);
+	}
+
+	CGAL::Direction_2<Kernel> target_direction() const {
+		return CurveTraits::target_direction(m_source->m_point, m_target->m_point, m_representation);
+	}
+
+	CGAL::Direction_2<Kernel> direction_at(Vertex_const_handle v) const {
+		assert(v == m_source || v == m_target);
+		if (v == m_source) {
+			return source_direction();
+		} else {
+			return target_direction();
+		}
+	}
+
 	friend std::ostream&
 	operator<<(std::ostream& os,
 	           const Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
-		return os << "[" << c.m_index << " : " << *(c.m_source) << " -> " << *(c.m_target) << "]";
+		return os << "E[" << c.m_index << " : " << *(c.m_source) << " -> " << *(c.m_target) << "]";
 	}
 };
 
@@ -1709,6 +1783,13 @@ class Graph_2_path {
 	}
 	const Path_data& data() const {
 		return m_data;
+	}
+
+	friend std::ostream&
+	operator<<(std::ostream& os,
+	           const Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+		return os << "P[" << c.m_index << " : " << (c.m_cyclic ? "cyclic, " : "acyclic, ")
+		          << *(c.m_start) << " -> " << *(c.m_end) << "]";
 	}
 };
 

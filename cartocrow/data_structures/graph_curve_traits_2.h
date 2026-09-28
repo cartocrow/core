@@ -29,6 +29,10 @@ concept GraphCurveTraits_2 =
 	{CST::curve_reversed(const_start, const_end, const_rep)}->std::same_as<typename CST::Curve_2>;
 	// determine the bounding box of the curve, from its representation
 	{CST::bbox(const_start, const_end, const_rep)}->std::same_as<CGAL::Bbox_2>;
+	// determine the initial direction at the source vertex of the edge, as specified by the points and representation
+	{CST::source_direction(const_start, const_end, const_rep)}->std::same_as<CGAL::Direction_2<typename CST::Kernel>>;
+	// determine the initial direction at the target vertex of the edge, as specified by the points and representation
+	{CST::target_direction(const_start, const_end, const_rep)}->std::same_as<CGAL::Direction_2<typename CST::Kernel>>;
 
 	// reverse the representation of an edge (NB: given position are the new positions)
 	{CST::reverse_representation(const_new_start, const_new_end, rep)};
