@@ -145,7 +145,7 @@ detail::PQTNode<PQT>* PointQuadTree<PQT>::find(Element elt) {
 }
 
 template <PointQuadTreeTraits PQT>
-PointQuadTree<PQT>::PointQuadTree(Rectangle<Kernel>& box, int depth) {
+PointQuadTree<PQT>::PointQuadTree(const Rectangle<Kernel>& box, int depth) {
 	root = new Node(nullptr, box, depth == 0);
 	maxdepth = depth;
 }

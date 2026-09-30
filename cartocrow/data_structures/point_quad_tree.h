@@ -22,7 +22,7 @@ template <PointQuadTreeTraits PQT> class PointQuadTree {
 	using Element = PQT::Element;
 	using ElementCallback = std::function<void(Element)>;
 
-	PointQuadTree(Rectangle<Kernel>& box, int depth);
+	PointQuadTree(const Rectangle<Kernel>& box, int depth);
 	~PointQuadTree();
 
 	void clear();
