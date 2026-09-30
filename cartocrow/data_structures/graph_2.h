@@ -273,9 +273,9 @@ class Graph_2 {
 		if (v->degree() > 2) {
 			std::ranges::sort(v->m_incident, [&v](Edge_handle e, Edge_handle f) {
 				CGAL::Direction_2<Kernel> dir_e =
-				    CGAL::Direction_2<Kernel>(e->other(v)->m_point - v->m_point);
+				    CGAL::Direction_2<Kernel>(e->direction_at(v));
 				CGAL::Direction_2<Kernel> dir_f =
-				    CGAL::Direction_2<Kernel>(f->other(v)->m_point - v->m_point);
+				    CGAL::Direction_2<Kernel>(f->direction_at(v));
 				return dir_e < dir_f;
 			});
 		}
