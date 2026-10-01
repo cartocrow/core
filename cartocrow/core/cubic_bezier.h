@@ -123,6 +123,9 @@ class CubicBezierCurve {
 	/// Construct a cubic Bézier curve from two endpoints.
 	CubicBezierCurve(Point<K> source, Point<K> target);
 
+	/// Construct a cubic Bézier curve from a line segment.
+	CubicBezierCurve(Segment<K> seg);
+
 	/// Returns the source of this curve.
 	Point<K> source() const;
 	/// Returns the control point on the source side of this curve.
@@ -198,7 +201,7 @@ class CubicBezierCurve {
 	};
 
 	/// Given a point, return the nearest point on the curve together with its parameter value.
-	CurvePoint nearest(Point<K> point) const;
+	CurvePoint nearest(Point<K> point, double threshold = M_EPSILON) const;
 
 	/// Returns the extrema on the curve: left-, bottom-, right-, top-most points on the curve.
 	std::tuple<CurvePoint, CurvePoint, CurvePoint, CurvePoint> extrema() const;
@@ -351,13 +354,19 @@ class CubicBezierSpline {
 	/// Create an empty spline.
 	CubicBezierSpline();
 
-	/// Create a spline from a curve.
-	CubicBezierSpline(const CubicBezierCurve& curve);
-
 	/// Create a spline from a sequence of 3k+1 control points (Point<Inexact>).
 	template <class InputIterator>
 	CubicBezierSpline(InputIterator begin, InputIterator end) : m_c(begin, end)
 		{ assert(m_c.size() == 0 || (m_c.size() - 1) % 3 == 0);}
+
+	/// Create a spline from a polyline.
+	CubicBezierSpline(Segment<K> segment);
+
+	/// Create a spline from a single curve;
+	CubicBezierSpline(CubicBezierCurve curve);
+
+	/// Create a spline from a polyline.
+	CubicBezierSpline(Polyline<K> polyline);
 
 	/// Append a cubic Bézier curve.
 	void appendCurve(const Curve& curve);
@@ -541,7 +550,7 @@ class CubicBezierSpline {
 
 	// === More computational operations ===
 	/// Given a point, return the nearest point on the spline together with its parameter value.
-	SplinePoint nearest(Point<K> point) const;
+	SplinePoint nearest(Point<K> point, double threshold = M_EPSILON) const;
 	/// Returns the extrema on the spline: left-, bottom-, right-, top-most points on the curve.
 	std::tuple<SplinePoint, SplinePoint, SplinePoint, SplinePoint> extrema() const;
 	/// Returns the axis-aligned bounding box of the spline.

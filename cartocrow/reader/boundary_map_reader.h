@@ -1,5 +1,4 @@
-#ifndef CARTOCROW_BOUNDARY_MAP_READER_H
-#define CARTOCROW_BOUNDARY_MAP_READER_H
+#pragma once
 
 #include "cartocrow/core/boundary_map.h"
 
@@ -13,4 +12,3 @@ namespace cartocrow {
 /// or if the file does not contain boundaries like specified above.
 BoundaryMap ipeToBoundaryMap(const std::filesystem::path &file);
 }
-#endif //CARTOCROW_BOUNDARY_MAP_READER_H

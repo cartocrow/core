@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(cartocrow
-    VERSION 0.1.5
-    DESCRIPTION "Framework for algorithmic thematic mapping"
-    HOMEPAGE_URL "https://github.com/tue-alga/cartocrow"
+    VERSION 0.1.0
+    DESCRIPTION "Framework for algorithmic cartography"
+    HOMEPAGE_URL "https://github.com/cartocrow/core"
     LANGUAGES CXX)
 
 set(CMAKE_INSTALL_BINARY_DIR bin CACHE STRING "Installation subdirectory for compiled executables and shared libraries.")
@@ -28,7 +28,7 @@ endmacro(install_files_and_directories)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     CartoCrowConfigVersion.cmake
-    VERSION 0.1.5
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
@@ -42,10 +42,10 @@ endif()
 if(EMSCRIPTEN)
     # If you modify anything in this Emscripten build setup, do not forget to also adjust cmake/CartoCrowConfig.cmake appropriately.
     add_compile_definitions(
-        USE_BOOST_HEADERS=1
         CGAL_ALWAYS_ROUND_TO_NEAREST
         CGAL_DISABLE_GMP=ON
     )
+    add_compile_options(-sUSE_BOOST_HEADERS=1)
     add_compile_options(-fwasm-exceptions)
     add_link_options(-g -fwasm-exceptions -lembind)
     if (NOT DEFINED EMSCRIPTEN_INCLUDE_DIR)

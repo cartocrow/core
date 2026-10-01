@@ -14,8 +14,8 @@ add_subdirectory(core)
 add_subdirectory(circle_segment_helpers)
 add_subdirectory(data_structures)
 add_subdirectory(renderer)
+add_subdirectory(reader)
 if (NOT EMSCRIPTEN)
-    add_subdirectory(reader)
     add_subdirectory(widgets)
 endif()
 
@@ -37,6 +37,7 @@ target_link_libraries(
     data_structures
     circle_segment_helpers
     renderer
+    reader
 )
 endif()
 

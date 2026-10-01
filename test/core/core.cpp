@@ -1,3 +1,20 @@
+/*
+Copyright (C) 2026  TU Eindhoven
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "../catch.hpp"
 
 #include <CGAL/Arr_walk_along_line_point_location.h>
@@ -267,54 +284,4 @@ TEST_CASE("Approximating exact polygon sets by inexact ones") {
 	CHECK(set.number_of_polygons_with_holes() == 2);
 	PolygonSet<Inexact> setInexact = approximate<Exact, PolygonSet>(set);
 	CHECK(setInexact.number_of_polygons_with_holes() == 2);
-}
-
-TEST_CASE("Wrapping numbers to intervals") {
-	CHECK(cartocrow::wrap<Inexact>(0, 0, 3) == Approx(0));
-	CHECK(cartocrow::wrap<Exact>(0, 0, 3) == 0);
-	CHECK(cartocrow::wrap<Inexact>(1, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrap<Exact>(1, 0, 3) == 1);
-	CHECK(cartocrow::wrap<Inexact>(2, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrap<Exact>(2, 0, 3) == 2);
-	CHECK(cartocrow::wrap<Inexact>(3, 0, 3) == Approx(0));
-	CHECK(cartocrow::wrap<Exact>(3, 0, 3) == 0);
-	CHECK(cartocrow::wrapUpper<Inexact>(0, 0, 3) == Approx(3));
-	CHECK(cartocrow::wrapUpper<Exact>(0, 0, 3) == 3);
-	CHECK(cartocrow::wrapUpper<Inexact>(1, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrapUpper<Exact>(1, 0, 3) == 1);
-	CHECK(cartocrow::wrapUpper<Inexact>(2, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrapUpper<Exact>(2, 0, 3) == 2);
-	CHECK(cartocrow::wrapUpper<Inexact>(3, 0, 3) == Approx(3));
-	CHECK(cartocrow::wrapUpper<Exact>(3, 0, 3) == 3);
-
-	CHECK(cartocrow::wrap<Inexact>(15, 0, 3) == Approx(0));
-	CHECK(cartocrow::wrap<Exact>(15, 0, 3) == 0);
-	CHECK(cartocrow::wrap<Inexact>(16, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrap<Exact>(16, 0, 3) == 1);
-	CHECK(cartocrow::wrap<Inexact>(17, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrap<Exact>(17, 0, 3) == 2);
-	CHECK(cartocrow::wrapUpper<Inexact>(15, 0, 3) == Approx(3));
-	CHECK(cartocrow::wrapUpper<Exact>(15, 0, 3) == 3);
-	CHECK(cartocrow::wrapUpper<Inexact>(16, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrapUpper<Exact>(16, 0, 3) == 1);
-	CHECK(cartocrow::wrapUpper<Inexact>(17, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrapUpper<Exact>(17, 0, 3) == 2);
-
-	CHECK(cartocrow::wrap<Inexact>(-15, 0, 3) == Approx(0));
-	CHECK(cartocrow::wrap<Exact>(-15, 0, 3) == 0);
-	CHECK(cartocrow::wrap<Inexact>(-16, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrap<Exact>(-16, 0, 3) == 2);
-	CHECK(cartocrow::wrap<Inexact>(-17, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrap<Exact>(-17, 0, 3) == 1);
-	CHECK(cartocrow::wrapUpper<Inexact>(-15, 0, 3) == Approx(3));
-	CHECK(cartocrow::wrapUpper<Exact>(-15, 0, 3) == 3);
-	CHECK(cartocrow::wrapUpper<Inexact>(-16, 0, 3) == Approx(2));
-	CHECK(cartocrow::wrapUpper<Exact>(-16, 0, 3) == 2);
-	CHECK(cartocrow::wrapUpper<Inexact>(-17, 0, 3) == Approx(1));
-	CHECK(cartocrow::wrapUpper<Exact>(-17, 0, 3) == 1);
-
-	CHECK(cartocrow::wrap<Inexact>(4.5, 0, 2.5) == Approx(2));
-	CHECK(cartocrow::wrap<Exact>(4.5, 0, 2.5) == 2);
-	CHECK(cartocrow::wrapUpper<Inexact>(4.5, 0, 2.5) == Approx(2));
-	CHECK(cartocrow::wrapUpper<Exact>(4.5, 0, 2.5) == 2);
 }

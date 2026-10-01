@@ -40,6 +40,8 @@ CubicBezierCurve::CubicBezierCurve(Point<K> source, Point<K> target)
     : CubicBezierCurve(source, source + (target - source) * 1.0 / 3.0,
                        source + (target - source) * 2.0 / 3.0, target) {}
 
+CubicBezierCurve::CubicBezierCurve(Segment<K> seg) : CubicBezierCurve(seg.source(), seg.target()) {}
+
 Point<Inexact> CubicBezierCurve::source() const {
 	return m_p0;
 }
@@ -199,9 +201,8 @@ double CubicBezierCurve::doubleParameter(CubicBezierCurve::Parameter param) cons
 	return param;
 }
 
-CubicBezierCurve::CurvePoint CubicBezierCurve::nearest(Point<K> point) const {
+CubicBezierCurve::CurvePoint CubicBezierCurve::nearest(Point<K> point, double threshold) const {
 	int nPoints = 10;
-	double threshold = M_EPSILON;
 
 	int closest = -1;
 	double minDist2 = std::numeric_limits<double>::infinity();
@@ -369,8 +370,17 @@ bool CubicBezierCurve::selfIntersects(double threshold) const {
 
 CubicBezierSpline::CubicBezierSpline() {};
 
-CubicBezierSpline::CubicBezierSpline(const Curve& curve) {
-	appendCurve(curve);
+CubicBezierSpline::CubicBezierSpline(Segment<K> segment) {
+	appendCurve(segment);
+}
+
+CubicBezierSpline::CubicBezierSpline(CubicBezierCurve curve)
+    : m_c({curve.source(), curve.sourceControl(), curve.targetControl(), curve.target()}) {};
+
+CubicBezierSpline::CubicBezierSpline(Polyline<K> polyline) {
+	for (int i = 0; i < polyline.num_edges(); ++i) {
+		appendCurve(polyline.vertex(i), polyline.vertex(i + 1));
+	}
 }
 
 void CubicBezierSpline::appendCurve(const Curve& curve) {
@@ -496,14 +506,15 @@ Number<Inexact> CubicBezierSpline::curvature(const SplineParameter& param) const
 	return c.curvature(param.t);
 }
 
-CubicBezierSpline::SplinePoint CubicBezierSpline::nearest(Point<Inexact> point) const {
+CubicBezierSpline::SplinePoint
+CubicBezierSpline::nearest(Point<Inexact> point, double threshold) const {
 	double minDist2 = std::numeric_limits<double>::infinity();
 	int closestIndex = -1;
 	Curve::CurvePoint closest;
 
 	int curveIndex = 0;
 	for (const auto& c : curves()) {
-		auto n = c.nearest(point);
+		auto n = c.nearest(point, threshold);
 		auto dist2 = CGAL::squared_distance(point, n.point);
 		if (dist2 < minDist2) {
 			minDist2 = dist2;
@@ -625,7 +636,9 @@ CubicBezierSpline::split(const SplineParameter& param) const {
 CubicBezierSpline CubicBezierSpline::sub(const CubicBezierSpline::SplineParameter& from,
                                          const CubicBezierSpline::SplineParameter& to) const {
 	if (from.curveIndex == to.curveIndex) {
-		return curve(from.curveIndex).sub(from.t, to.t);
+		CubicBezierCurve c = curve(from.curveIndex).sub(from.t, to.t);
+		CubicBezierSpline s(c);
+		return s;
 	}
 	// This can be optimized by not constructing curves but directly setting control points.
 	CubicBezierSpline s;

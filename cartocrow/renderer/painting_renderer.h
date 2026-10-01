@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,8 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CARTOCROW_RENDERER_PAINTING_RENDERER_H
-#define CARTOCROW_RENDERER_PAINTING_RENDERER_H
+#pragma once
 
 #include "geometry_painting.h"
 #include "geometry_renderer.h"
@@ -59,6 +56,10 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 	void setLineCap(LineCap lineCap) override;
 	void setHorizontalTextAlignment(HorizontalTextAlignment alignment) override;
 	void setVerticalTextAlignment(VerticalTextAlignment alignment) override;
+	void setFontFamily(std::string fontFamily) override;
+	void setFontSize(double fontSize) override;
+	void setFontWeight(bool bold) override;
+	void useDefaultFont() override;
 
   private:
 	struct Style {
@@ -91,6 +92,12 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 		HorizontalTextAlignment m_horizontalTextAlignment = AlignHCenter;
 		/// Vertical text alignment
 		VerticalTextAlignment m_verticalTextAlignment = AlignVCenter;
+		/// Bold text?
+		bool m_bold = false;
+		/// Local (per text element) font size
+		std::optional<double> m_fontSize = std::nullopt;
+		/// Local (per text element) font family
+		std::optional<std::string> m_fontFamily = std::nullopt;
 	};
 	using Label = std::tuple<Point<Inexact>, std::string, bool>;
 	using DrawableObject =
@@ -102,5 +109,3 @@ class PaintingRenderer : public GeometryPainting, public GeometryRenderer {
 };
 
 } // namespace cartocrow::renderer
-
-#endif //CARTOCROW_RENDERER_PAINTING_RENDERER_H

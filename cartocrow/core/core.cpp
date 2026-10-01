@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,8 +13,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Created by tvl (t.vanlankveld@esciencecenter.nl) on 05-12-2019
 */
 
 #include "core.h"
@@ -48,14 +44,6 @@ Color Color::shaded(double f) const {
 Color::Color() : r(0), g(0), b(0) {}
 Color::Color(int r, int g, int b) : r(r), g(g), b(b) {}
 Color::Color(int rgb) : r((rgb & 0xff0000) >> 16), g((rgb & 0x00ff00) >> 8), b(rgb & 0x0000ff) {}
-
-Number<Inexact> wrapAngle(Number<Inexact> alpha, Number<Inexact> beta) {
-	return wrap<Inexact>(alpha, beta, beta + two_pi);
-}
-
-Number<Inexact> wrapAngleUpper(Number<Inexact> alpha, Number<Inexact> beta) {
-	return wrapUpper<Inexact>(alpha, beta, beta + two_pi);
-}
 
 Number<Exact> pretendExact(const Number<Inexact>& v) {
 	return convert_kernel<Exact>(v);

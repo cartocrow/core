@@ -1,0 +1,72 @@
+name: Linux
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cxx: g++-14
+            cc: gcc-14
+            pkg: g++-14
+          - cxx: clang++-17
+            cc: clang-17
+            pkg: clang-17
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install C++ compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.pkg }}
+        echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+    - name: Check C++ compiler version
+      run: $CXX --version
+    - name: Install dependencies
+      run: |
+        sudo apt install -y build-essential cmake
+        sudo apt install -y libcgal-dev nlohmann-json3-dev qtbase5-dev
+        sudo apt install -y libpq-dev gdal-bin libgdal-dev
+    - name: Install ipelib
+      run: |
+        mkdir -p /tmp/deps
+        cd /tmp/deps
+        wget https://github.com/otfried/ipe/archive/refs/tags/v7.2.30.zip
+        unzip v7.2.30
+        cd ipe-7.2.30
+        sudo apt-get install -y build-essential checkinstall
+        sudo apt-get install -y qt6-base-dev qt6-base-dev-tools
+        sudo apt-get install -y libqt6svg6
+        sudo apt-get install -y libfreetype6-dev libcairo2-dev libjpeg8-dev
+        sudo apt-get install -y libpng-dev liblua5.4-dev zlib1g-dev
+        sudo apt-get install -y libspiro-dev libgsl-dev curl
+        cd src
+        make IPEPREFIX=/usr/local
+        sudo make install IPEPREFIX=/usr/local
+        sudo ldconfig
+        cd ../..
+    - name: Install CavalierContours
+      run: |
+        cd /tmp/deps
+        git clone https://github.com/jbuckmccready/CavalierContours.git
+        cd CavalierContours
+        sudo cp -R include/cavc /usr/local/include
+    - name: Build CartoCrow core in Debug mode
+      run: | 
+        cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build-debug
+        cmake --build build-debug
+    - name: Build CartoCrow core in Release mode
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release -S . -B build-release
+        cmake --build build-release
+    - name: Test CartoCrow core in Debug mode
+      run: build-debug/test/cartocrow_test
+    - name: Test CartoCrow core in Release mode
+      run: build-release/test/cartocrow_test

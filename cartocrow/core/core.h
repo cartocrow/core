@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,12 +13,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Created by tvl (t.vanlankveld@esciencecenter.nl) on 07-11-2019
 */
 
-#ifndef CARTOCROW_CORE_CORE_H
-#define CARTOCROW_CORE_CORE_H
+#pragma once
 
 #include <CGAL/Arr_segment_traits_2.h>
 #include <CGAL/Arrangement_2.h>
@@ -121,43 +116,6 @@ struct Color {
 	/// Constructs a color from a single integer (useful combined with hexadecimal literals, e.g. 0xFFFFFF).
 	Color(int rgb);
 };
-
-/// Wraps the given number \f$n\f$ to the interval \f$[a, b)\f$.
-/**
- * The returned number \f$r\f$ is \f$n + k \cdot (b - a)\f$ for \f$k \in
- * \mathbb{Z}\f$ such that \f$r \in [a, b)\f$.
- */
-template <class K> Number<K> wrap(Number<K> n, Number<K> a, Number<K> b) {
-	Number<K> constrained = n;
-	Number<K> interval_size = b - a;
-	while (constrained < a)
-		constrained += interval_size;
-	while (a + interval_size <= constrained)
-		constrained -= interval_size;
-	return constrained;
-}
-
-/// Wraps the given number \f$n\f$ to the interval \f$(a, b]\f$.
-/**
- * The returned number \f$r\f$ is \f$n + k \cdot (b - a)\f$ for \f$k \in
- * \mathbb{Z}\f$ such that \f$r \in (a, b]\f$.
- */
-template <class K> Number<K> wrapUpper(Number<K> n, Number<K> a, Number<K> b) {
-	Number<K> constrained = n;
-	Number<K> interval_size = b - a;
-	while (constrained <= a)
-		constrained += interval_size;
-	while (a + interval_size < constrained)
-		constrained -= interval_size;
-	return constrained;
-}
-
-/// Wraps the given number \f$\alpha\f$ to the interval \f$[\beta, \beta +
-/// 2\pi)\f$.
-Number<Inexact> wrapAngle(Number<Inexact> alpha, Number<Inexact> beta = 0);
-/// Wraps the given number \f$\alpha\f$ to the interval \f$(\beta, \beta +
-/// 2\pi]\f$.
-Number<Inexact> wrapAngleUpper(Number<Inexact> alpha, Number<Inexact> beta = 0);
 
 /// \f$2 \pi\f$, defined here for convenience.
 constexpr Number<Inexact> two_pi = std::numbers::pi * 2;
@@ -319,5 +277,3 @@ Number<Inexact> approximate(const Number<Inexact>& v);
 Number<Inexact> approximate(const Number<Exact>& v);
 
 } // namespace cartocrow
-
-#endif //CARTOCROW_CORE_CORE_H

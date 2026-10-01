@@ -1,5 +1,21 @@
-#ifndef CARTOCROW_CORE_ELLIPSE_H
-#define CARTOCROW_CORE_ELLIPSE_H
+/*
+Copyright (C) 2026  TU Eindhoven
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#pragma once
 
 #include <string>
 #include <utility>
@@ -25,6 +41,9 @@ class Ellipse {
 
 	Ellipse() : A(1), B(), C(1), D(), E(), F(-1) {}
 	Ellipse(double a, double b, double c, double d, double e, double f);
+	Ellipse(Circle<Inexact> c)
+	    : A(1), B(0), C(1), D(-2 * c.center().x()), E(-2 * c.center().y()),
+	      F(c.center().x() * c.center().x() + c.center().y() * c.center().y() - c.squared_radius()) {}
 
 	double angle() const;
 	Point<Inexact> center() const;
@@ -65,5 +84,3 @@ class EllipseAtOrigin : public Ellipse {
 };
 
 } // namespace cartocrow
-
-#endif // CARTOCROW_CORE_ELLIPSE_H

@@ -1,7 +1,5 @@
 /*
-The CartoCrow library implements algorithmic geo-visualization methods,
-developed at TU Eindhoven.
-Copyright (C) 2021  Netherlands eScience Center and TU Eindhoven
+Copyright (C) 2026  TU Eindhoven
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,8 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CARTOCROW_RENDERER_GEOMETRY_RENDERER_H
-#define CARTOCROW_RENDERER_GEOMETRY_RENDERER_H
+#pragma once
 
 #include "../core/core.h"
 #include "../core/cubic_bezier.h"
@@ -219,9 +216,15 @@ class GeometryRenderer {
 	virtual void setHorizontalTextAlignment(HorizontalTextAlignment alignment) = 0;
 	/// Set vertical text alignment.
 	virtual void setVerticalTextAlignment(VerticalTextAlignment alignment) = 0;
+	/// Set font family (assumes it is the name of a system font that is installed) 
+	virtual void setFontFamily(std::string fontFamily) = 0;
+	/// Set font size
+	virtual void setFontSize(double fontSize) = 0;
+	/// Set font weight
+	virtual void setFontWeight(bool bold) = 0;
+	/// Remove font specification (if possible in the renderer) and use the default instead
+	virtual void useDefaultFont() = 0;
 	/// @}
 };
 
 } // namespace cartocrow::renderer
-
-#endif //CARTOCROW_RENDERER_GEOMETRY_RENDERER_H

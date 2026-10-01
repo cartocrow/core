@@ -1,3 +1,20 @@
+/*
+Copyright (C) 2026  TU Eindhoven
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "region_map_reader.h"
 
 #include <ipedoc.h>
@@ -16,46 +33,24 @@ namespace cartocrow {
 RegionMap ipeToRegionMap(const std::filesystem::path& file, bool labelAtCentroid) {
 	RegionMap regions;
 
-	std::shared_ptr<ipe::Document> document = IpeReader::loadIpeFile(file);
+	IpeReader reader(file);
 
-	if (document->countPages() == 0) {
+	int numPages = reader.numberOfPages();
+	if (numPages == 0) {
 		throw std::runtime_error("Cannot read map from an Ipe file with no pages");
-	} else if (document->countPages() > 1) {
+	} else if (numPages > 1) {
 		throw std::runtime_error("Cannot read map from an Ipe file with more than one page");
 	}
 
-	ipe::Page* page = document->page(0);
-
 	// step 1: find labels
-	std::vector<detail::RegionLabel> labels;
-
-	for (int i = 0; i < page->count(); ++i) {
-		ipe::Object* object = page->object(i);
-		ipe::Object::Type type = object->type();
-		if (type != ipe::Object::Type::EText) {
-			continue;
-		}
-		ipe::Matrix matrix = object->matrix();
-		ipe::Vector translation = matrix * object->asText()->position();
-		Point<Exact> position(translation.x, translation.y);
-		ipe::String ipeString = object->asText()->text();
-		std::string text(ipeString.data(), ipeString.size());
-		labels.push_back(detail::RegionLabel{position, text, false});
-	}
-
+	auto labels = reader.read<Multiple, detail::RegionLabel, WithoutAttributes, RegionLabelReaderTraits>();
+	
 	// step 2: find regions
-	for (int i = 0; i < page->count(); ++i) {
-		ipe::Object* object = page->object(i);
-		int layer = page->layerOf(i);
-		ipe::Object::Type type = object->type();
-		if (type != ipe::Object::Type::EPath) {
-			continue;
-		}
-		ipe::Path* path = object->asPath();
-		ipe::Matrix matrix = path->matrix();
-		ipe::Shape ipeShape = path->shape();
-		// interpret filled paths as regions
-		PolygonSet<Exact> shape = cartocrow::IpeReader::convertShapeToPolygonSet(ipeShape, matrix);
+	// interpret filled paths as regions
+	auto features = reader.read<Multiple, PolygonSetRaw<Inexact>, WithAttributes>();
+
+	for (auto& feature : features) {
+		auto shape = pretendExact(feature.geometry).polygonSet();
 		std::string name;
 		if (labelAtCentroid) {
 			auto& label = findLabelAtCentroid(shape, labels);
@@ -95,11 +90,9 @@ RegionMap ipeToRegionMap(const std::filesystem::path& file, bool labelAtCentroid
 		} else {
 			Region region;
 			region.name = name;
-			if (path->fill().isSymbolic()) {
-				region.color = IpeReader::convertIpeColor(
-				    document->cascade()->find(ipe::Kind::EColor, path->fill()).color());
-			} else {
-				region.color = IpeReader::convertIpeColor(path->fill().color());
+			if (feature.attributes.contains("fill")) {
+				auto colorString = std::get<std::string>(feature.attributes["fill"]);
+				region.color = IpeReader::convertStringToColor(colorString, file);
 			}
 			region.shape = shape;
 			regions[name] = region;
