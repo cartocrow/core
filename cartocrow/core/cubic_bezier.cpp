@@ -636,9 +636,7 @@ CubicBezierSpline::split(const SplineParameter& param) const {
 CubicBezierSpline CubicBezierSpline::sub(const CubicBezierSpline::SplineParameter& from,
                                          const CubicBezierSpline::SplineParameter& to) const {
 	if (from.curveIndex == to.curveIndex) {
-		CubicBezierCurve c = curve(from.curveIndex).sub(from.t, to.t);
-		CubicBezierSpline s(c);
-		return s;
+		return curve(from.curveIndex).sub(from.t, to.t);
 	}
 	// This can be optimized by not constructing curves but directly setting control points.
 	CubicBezierSpline s;
