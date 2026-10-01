@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string>
 #include <list>
 
-namespace cartocrow {
+namespace cartocrow::utils {
 
 enum TimeResolution { SECONDS, MILLISECONDS, NANOSECONDS };
 

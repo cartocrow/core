@@ -15,6 +15,7 @@ add_subdirectory(circle_segment_helpers)
 add_subdirectory(data_structures)
 add_subdirectory(renderer)
 add_subdirectory(reader)
+add_subdirectory(utils)
 if (NOT EMSCRIPTEN)
     add_subdirectory(widgets)
 endif()
@@ -28,6 +29,7 @@ target_link_libraries(
     data_structures
     renderer
     reader
+    utils
     widgets
 )
 else()
@@ -38,6 +40,7 @@ target_link_libraries(
     circle_segment_helpers
     renderer
     reader
+    utils
 )
 endif()
 

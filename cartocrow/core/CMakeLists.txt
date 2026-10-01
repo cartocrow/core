@@ -8,7 +8,6 @@ set(SOURCES
 	rectangle_helpers.cpp
 	region_arrangement.cpp
 	segment_delaunay_graph_helpers.cpp
-	stopwatch.cpp
 	transform_helpers.cpp
 	vector_helpers.cpp
 )
@@ -36,7 +35,6 @@ set(HEADERS
 	root_finding_helpers.h
 	segment_delaunay_graph_helpers.h
 	segment_delaunay_graph_helpers_cgal_adapted.h
-	stopwatch.h
 	straight_geometry.h
 	transform_helpers.h
 	vector_helpers.h
