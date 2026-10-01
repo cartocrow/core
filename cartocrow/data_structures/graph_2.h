@@ -82,22 +82,22 @@ class Graph_2 {
 	History m_history;
 	bool m_initialized = false;
 
-	std::vector<Graph_map_base*> m_vertex_maps;
-	std::vector<Graph_map_base*> m_edge_maps;
-	std::vector<Graph_map_base*> m_path_maps;
+	std::vector<Graph_vertex_index_listener*> m_vertex_listeners;
+	std::vector<Graph_edge_index_listener*> m_edge_listeners;
+	std::vector<Graph_path_index_listener*> m_path_listeners;
 
 	void insert_vertex_into_container(Vertex_handle v) {
 		const size_t index = v->graph_index();
 		if (index == m_vertices.size()) {
 			m_vertices.push_back(v);
-			for (Graph_map_base* m : m_vertex_maps) {
+			for (Graph_vertex_index_listener* m : m_vertex_listeners) {
 				m->add_index();
 			}
 		} else {
 			m_vertices[index]->m_index = m_vertices.size();
 			m_vertices.push_back(m_vertices[index]);
 			m_vertices[index] = v;
-			for (Graph_map_base* m : m_vertex_maps) {
+			for (Graph_vertex_index_listener* m : m_vertex_listeners) {
 				m->add_index(index);
 			}
 		}
@@ -109,11 +109,11 @@ class Graph_2 {
 		if (index != last) {
 			m_vertices[index] = m_vertices[last];
 			m_vertices[index]->m_index = index;
-			for (Graph_map_base* m : m_vertex_maps) {
+			for (Graph_vertex_index_listener* m : m_vertex_listeners) {
 				m->remove_index(index);
 			}
 		} else {
-			for (Graph_map_base* m : m_vertex_maps) {
+			for (Graph_vertex_index_listener* m : m_vertex_listeners) {
 				m->remove_last_index();
 			}
 		}
@@ -124,14 +124,14 @@ class Graph_2 {
 		const size_t index = e->graph_index();
 		if (index == m_edges.size()) {
 			m_edges.push_back(e);
-			for (Graph_map_base* m : m_edge_maps) {
+			for (Graph_edge_index_listener* m : m_edge_listeners) {
 				m->add_index();
 			}
 		} else {
 			m_edges[index]->m_index = m_edges.size();
 			m_edges.push_back(m_edges[index]);
 			m_edges[index] = e;
-			for (Graph_map_base* m : m_edge_maps) {
+			for (Graph_edge_index_listener* m : m_edge_listeners) {
 				m->add_index(index);
 			}
 		}
@@ -143,11 +143,11 @@ class Graph_2 {
 		if (index != last) {
 			m_edges[index] = m_edges[last];
 			m_edges[index]->m_index = index;
-			for (Graph_map_base* m : m_edge_maps) {
+			for (Graph_edge_index_listener* m : m_edge_listeners) {
 				m->remove_index(index);
 			}
 		} else {
-			for (Graph_map_base* m : m_edge_maps) {
+			for (Graph_edge_index_listener* m : m_edge_listeners) {
 				m->remove_last_index();
 			}
 		}
@@ -363,6 +363,10 @@ class Graph_2 {
 			}
 		}
 
+		for (Graph_path_index_listener* list : m_path_listeners) {
+			list->resize(number_of_paths());
+		}
+
 		assert(verify_decomposed());
 	}
 	bool verify_decomposed() const requires GraphTraits::decomposed {
@@ -510,37 +514,40 @@ class Graph_2 {
 		return m_paths.cend();
 	}
 
-	// ----Vertex/edge maps --------------------------------------------------- //
-	void add_vertex_map(Graph_map_base* map) {
-		m_vertex_maps.push_back(map);
+	// ----Vertex/edge listeners --------------------------------------------------- //
+	void add_listener(Graph_vertex_index_listener* list) {
+		m_vertex_listeners.push_back(list);
+		list->resize(number_of_vertices());
 	}
 
-	void remove_vertex_map(Graph_map_base* map) {
-		auto pos = std::find(m_vertex_maps.begin(), m_vertex_maps.end(), map);
-		if (pos != m_vertex_maps.end()) {
-			m_vertex_maps.erase(pos);
+	void remove_listener(Graph_vertex_index_listener* list) {
+		auto pos = std::find(m_vertex_listeners.begin(), m_vertex_listeners.end(), list);
+		if (pos != m_vertex_listeners.end()) {
+			m_vertex_listeners.erase(pos);
 		}
 	}
 
-	void add_edge_map(Graph_map_base* map) {
-		m_edge_maps.push_back(map);
+	void add_listener(Graph_edge_index_listener* list) {
+		m_edge_listeners.push_back(list);
+		list->resize(number_of_edges());
 	}
 
-	void remove_edge_map(Graph_map_base* map) {
-		auto pos = std::find(m_edge_maps.begin(), m_edge_maps.end(), map);
-		if (pos != m_edge_maps.end()) {
-			m_edge_maps.erase(pos);
+	void remove_listener(Graph_edge_index_listener* list) {
+		auto pos = std::find(m_edge_listeners.begin(), m_edge_listeners.end(), list);
+		if (pos != m_edge_listeners.end()) {
+			m_edge_listeners.erase(pos);
 		}
 	}
 
-	void add_path_map(Graph_map_base* map) requires GraphTraits::decomposed {
-		m_path_maps.push_back(map);
+	void add_listener(Graph_path_index_listener* list) requires GraphTraits::decomposed {
+		m_path_listeners.push_back(list);
+		list->resize(number_of_paths());
 	}
 
-	void remove_path_map(Graph_map_base* map) requires GraphTraits::decomposed {
-		auto pos = std::find(m_path_maps.begin(), m_path_maps.end(), map);
-		if (pos != m_path_maps.end()) {
-			m_path_maps.erase(pos);
+	void remove_listener(Graph_path_index_listener* list) requires GraphTraits::decomposed {
+		auto pos = std::find(m_path_listeners.begin(), m_path_listeners.end(), list);
+		if (pos != m_path_listeners.end()) {
+			m_path_listeners.erase(pos);
 		}
 	}
 
@@ -625,14 +632,14 @@ class Graph_2 {
 
 		const size_t num_v = other.number_of_vertices();
 		m_vertices.resize(num_v);
-		for (Graph_map_base* m : m_vertex_maps) {
-			m->resize(num_v);
+		for (Graph_vertex_index_listener* list : m_vertex_listeners) {
+			list->resize(num_v);
 		}
 
 		const size_t num_e = other.number_of_edges();
 		m_edges.resize(num_e);
-		for (Graph_map_base* m : m_edge_maps) {
-			m->resize(num_e);
+		for (Graph_edge_index_listener* list : m_edge_listeners) {
+			list->resize(num_e);
 		}
 
 		m_initialized = other.m_initialized;
@@ -670,8 +677,8 @@ class Graph_2 {
 		if constexpr (GraphTraits::decomposed) {
 			const size_t num_p = other.number_of_paths();
 			m_paths.resize(num_p);
-			for (Graph_map_base* m : m_path_maps) {
-				m->resize(num_p);
+			for (Graph_path_index_listener* list : m_path_listeners) {
+				list->resize(num_p);
 			}
 
 			Graph_static_path_map<Graph_2, Path_handle> pmap(other, nullptr);
@@ -846,31 +853,40 @@ class Graph_2 {
 	}
 
 	void clear(bool clear_init = false) {
+				
+		if constexpr (GraphTraits::historic) {
+			m_history.clear();
+		}
+
+		for (Graph_vertex_index_listener* list : m_vertex_listeners) {
+			list->clear();
+		}
+		m_vertex_listeners.clear();
 		for (Vertex_handle v : m_vertices) {
 			delete v;
 		}
 		m_vertices.clear();
+
+		for (Graph_edge_index_listener* list : m_edge_listeners) {
+			list->clear();
+		}
+		m_edge_listeners.clear();
 		for (Edge_handle e : m_edges) {
 			delete e;
 		}
 		m_edges.clear();
+
 		if constexpr (GraphTraits::decomposed) {
+			for (Graph_path_index_listener* list : m_path_listeners) {
+				list->clear();
+			}
+			m_path_listeners.clear();
+
 			for (Path_handle p : m_paths) {
 				delete p;
 			}
 			m_paths.clear();
 		}
-		if constexpr (GraphTraits::historic) {
-			m_history.clear();
-		}
-		for (Graph_map_base* m : m_vertex_maps) {
-			m->clear();
-		}
-		m_vertex_maps.clear();
-		for (Graph_map_base* m : m_edge_maps) {
-			m->clear();
-		}
-		m_edge_maps.clear();
 		m_initialized = !m_initialized || clear_init;
 	}
 
