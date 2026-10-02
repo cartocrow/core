@@ -369,6 +369,10 @@ void IpeRenderer::setFillOpacity(int alpha) {
 	m_style.m_fillOpacity = name;
 }
 
+void IpeRenderer::setPointSize(double size, [[maybe_unused]] bool absoluteSize) {
+	m_style.m_pointSize = size;
+}
+
 void IpeRenderer::setClipPath(const RenderPath &clipPath) {
     m_style.m_clipPath = renderPathToIpe(clipPath);
 }

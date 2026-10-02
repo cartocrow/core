@@ -139,6 +139,12 @@ void PaintingRenderer::setFillOpacity(int alpha) {
 	m_objects.push_back(m_style);
 }
 
+void PaintingRenderer::setPointSize(double size, bool absoluteSize) {
+	m_style.m_pointSize = size;
+	m_style.m_absoluteWidth = absoluteSize;
+	m_objects.push_back(m_style);
+}
+
 void PaintingRenderer::setClipPath(const RenderPath& clipPath) {
 	m_style.m_clipPath = clipPath;
     m_objects.push_back(m_style);
