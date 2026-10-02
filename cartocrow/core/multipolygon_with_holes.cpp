@@ -15,16 +15,22 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "point_set.h"
+#include "multipolygon_with_holes.h"
 
 namespace cartocrow {
-PointSet<Inexact> approximate(const PointSet<Exact>& ps) {
-    std::vector<Point<Inexact>> psInexact;
+MultipolygonWithHoles<Inexact> approximate(const MultipolygonWithHoles<Exact>& pgs) {
+	MultipolygonWithHoles<Inexact> approximated;
+	for (const PolygonWithHoles<Exact>& pgn : pgs.polygons_with_holes()) {
+		approximated.add_polygon_with_holes(cartocrow::approximate(pgn));
+	}
+	return approximated;
+}
 
-    for (const auto& p : ps.points) {
-		psInexact.push_back(approximate(p));
-    }
-
-    return {psInexact};
+MultipolygonWithHoles<Exact> pretendExact(const MultipolygonWithHoles<Inexact>& pgs) {
+	MultipolygonWithHoles<Exact> exact;
+	for (const auto& pgn : pgs.polygons_with_holes()) {
+		exact.add_polygon_with_holes(cartocrow::pretendExact(pgn));
+	}
+	return exact;
 }
 }

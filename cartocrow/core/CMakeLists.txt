@@ -3,8 +3,8 @@ set(SOURCES
 	cubic_bezier.cpp
 	ellipse.cpp
 	geometric_feature.cpp
-	point_set.cpp
-	polygon_set_raw.cpp
+	multi_point.cpp
+	multipolygon_with_holes.cpp
 	rectangle_helpers.cpp
 	region_arrangement.cpp
 	segment_delaunay_graph_helpers.cpp
@@ -24,11 +24,11 @@ set(HEADERS
 	general_polyline.h
 	geometric_feature.h
 	halfplane.h
-	point_set.h
 	polygon_helpers.h
-	polygon_set_raw.h
 	polyline.h
-	polyline_set.h
+	multi_point.h
+	multipolygon_with_holes.h
+	multi_polyline.h
 	rectangle_helpers.h
 	region_arrangement.h
 	region_map.h
