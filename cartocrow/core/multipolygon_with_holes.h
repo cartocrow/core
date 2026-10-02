@@ -20,26 +20,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <cartocrow/core/core.h>
 #include <cartocrow/core/transform_helpers.h>
 
+#include <CGAL/Multipolygon_with_holes_2.h>
+
 namespace cartocrow {
 template <class K>
-struct PolygonSetRaw {
-	std::vector<PolygonWithHoles<K>> polygons_with_holes;
-
-	PolygonSetRaw<K> transform(const CGAL::Aff_transformation_2<K>& trans) const {
-		PolygonSetRaw<K> transformed;
-		for (const auto& pgn : polygons_with_holes) {
-			transformed.polygons_with_holes.push_back(cartocrow::transform(trans, pgn));
+struct MultipolygonWithHoles : public CGAL::Multipolygon_with_holes_2<K> {
+	MultipolygonWithHoles<K> transform(const CGAL::Aff_transformation_2<K>& trans) const {
+		MultipolygonWithHoles<K> transformed;
+		for (const auto& pgn : this->polygons_with_holes()) {
+			transformed.add_polygon_with_holes(cartocrow::transform(trans, pgn));
 		}
 		return transformed;
 	}
 
 	Box bbox() const {
-		return CGAL::bbox_2(polygons_with_holes.begin(), polygons_with_holes.end());
+		return CGAL::bbox_2(this->polygons_with_holes_begin(), this->polygons_with_holes_end());
 	}
 
 	PolygonSet<K> polygonSet() const {
 		PolygonSet<K> polygonSet;
-		for (auto pgn : polygons_with_holes) {
+		for (auto pgn : this->polygons_with_holes()) {
 			if (!pgn.outer_boundary().is_simple()) {
 				throw std::runtime_error("Encountered non-simple polygon");
 			}
@@ -59,17 +59,25 @@ struct PolygonSetRaw {
 		return polygonSet;
 	}
 
-	PolygonSetRaw() = default;
+	MultipolygonWithHoles() = default;
 
-	PolygonSetRaw(Polygon<K> polygon) {
-		polygons_with_holes.emplace_back(std::move(polygon));
+	MultipolygonWithHoles(Polygon<K> polygon) {
+		this->add_polygon(std::move(polygon));
 	}
 
-	PolygonSetRaw(PolygonWithHoles<K> polygon) {
-		polygons_with_holes.push_back(std::move(polygon));
+	MultipolygonWithHoles(PolygonWithHoles<K> polygon) {
+		this->add_polygon_with_holes(std::move(polygon));
 	}
+
 };
 
-PolygonSetRaw<Inexact> approximate(const PolygonSetRaw<Exact>& pgs);
-PolygonSetRaw<Exact> pretendExact(const PolygonSetRaw<Inexact>& pgs);
+template <typename KernelOut, typename KernelIn>
+MultipolygonWithHoles<KernelOut> convert_kernel(const MultipolygonWithHoles<KernelIn>& v) {
+	MultipolygonWithHoles<KernelOut> result;
+	for (const auto& p : v.polygons_with_holes()) {
+		result.add_polygon_with_holes(convert_kernel<KernelOut>(p));
+	}
+	return result;
+}
+
 }

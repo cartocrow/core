@@ -15,21 +15,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "polygon_set_raw.h"
+#include "multipolygon_with_holes.h"
 
 namespace cartocrow {
-PolygonSetRaw<Inexact> approximate(const PolygonSetRaw<Exact>& pgs) {
-	PolygonSetRaw<Inexact> approximated;
-	for (const PolygonWithHoles<Exact>& pgn : pgs.polygons_with_holes) {
-		approximated.polygons_with_holes.push_back(cartocrow::approximate(pgn));
+MultipolygonWithHoles<Inexact> approximate(const MultipolygonWithHoles<Exact>& pgs) {
+	MultipolygonWithHoles<Inexact> approximated;
+	for (const PolygonWithHoles<Exact>& pgn : pgs.polygons_with_holes()) {
+		approximated.add_polygon_with_holes(cartocrow::approximate(pgn));
 	}
 	return approximated;
 }
 
-PolygonSetRaw<Exact> pretendExact(const PolygonSetRaw<Inexact>& pgs) {
-	PolygonSetRaw<Exact> exact;
-	for (const auto& pgn : pgs.polygons_with_holes) {
-		exact.polygons_with_holes.push_back(cartocrow::pretendExact(pgn));
+MultipolygonWithHoles<Exact> pretendExact(const MultipolygonWithHoles<Inexact>& pgs) {
+	MultipolygonWithHoles<Exact> exact;
+	for (const auto& pgn : pgs.polygons_with_holes()) {
+		exact.add_polygon_with_holes(cartocrow::pretendExact(pgn));
 	}
 	return exact;
 }
