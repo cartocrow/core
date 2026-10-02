@@ -20,10 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "../core/core.h"
 #include "../core/cubic_bezier.h"
 #include "../core/ellipse.h"
-#include "../core/polygon_set_raw.h"
-#include "../core/point_set.h"
+#include "../core/multipolygon_with_holes.h"
+#include "../core/multi_point.h"
 #include "../core/polyline.h"
-#include "../core/polyline_set.h"
+#include "../core/multi_polyline.h"
 #include "../core/halfplane.h"
 #include "render_path.h"
 
@@ -116,7 +116,7 @@ class GeometryRenderer {
 	/// Draws a single point with the currently set style.
 	virtual void draw(const Point<Inexact>& p) = 0;
 	/// Draws a point set with the currently set style.
-	void draw(const PointSet<Inexact>& ps);
+	void draw(const MultiPoint<Inexact>& ps);
 	/// Draws a single line segment with the currently set style.
 	void draw(const Segment<Inexact>& s);
 	/// Draws a rectangle
@@ -130,13 +130,13 @@ class GeometryRenderer {
 	/// Draws a polyline with the currently set style.
 	void draw(const Polyline<Inexact>& p);
 	/// Draws a polyline set with the currently set style.
-	void draw(const PolylineSet<Inexact>& p);
+	void draw(const MultiPolyline<Inexact>& p);
 	/// Draws a polygon with holes with the currently set style.
 	void draw(const PolygonWithHoles<Inexact>& p);
 	/// Draws a polygon set with the currently set style.
 	void draw(const PolygonSet<Inexact>& p);
 	/// Draws a polygon set with the currently set style.
-	void draw(const PolygonSetRaw<Inexact>& p);
+	void draw(const MultipolygonWithHoles<Inexact>& p);
 	/// Draws a circle with the currently set style.
 	virtual void draw(const Circle<Inexact>& c) = 0;
 	/// Draws an ellipse with the currently set style.
