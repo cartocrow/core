@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace cartocrow::data_structures {
 
-	template <typename QT> concept QuadTreeTraits = requires(typename QT::Element elt, Rectangle<typename QT::Kernel>& rect) {
+	template <typename QT> concept QuadTreeTraits = requires(typename QT::Element elt, const Rectangle<typename QT::Kernel>& rect) {
 
 		typename QT::Element;
 		typename QT::Kernel;
@@ -46,14 +46,14 @@ namespace cartocrow::data_structures {
 		using Element = QT::Element;
 		using ElementCallback = std::function<void(Element)>;
 
-		QuadTree(Rectangle<Kernel>& box, int depth, Number<Kernel> fuzz);
+		QuadTree(const Rectangle<Kernel>& box, int depth, Number<Kernel> fuzz);
 		~QuadTree();
 
 		void clear();
 		void insert(Element elt);
 		bool remove(Element elt);
 
-		void findOverlapped(Rectangle<Kernel>& query, ElementCallback act);
+		void findOverlapped(const Rectangle<Kernel>& query, ElementCallback act);
 
 	    Rectangle<Kernel> root_box();
 
@@ -65,12 +65,12 @@ namespace cartocrow::data_structures {
 		Number<Kernel> fuzziness;
 
 		// Does the rectangle enclose the (possibly infinite) node?
-		bool encloses(Rectangle<Kernel>& rect, Node* node);
+	    bool encloses(const Rectangle<Kernel>& rect, Node* node);
 
 		// Is the (possibly infinite) node disjoint from the rectangle
-		bool disjoint(Node* node, Rectangle<Kernel>& rect);
+	    bool disjoint(Node* node, const Rectangle<Kernel>& rect);
 
-		void findOverlappedRecursive(Node* n, Rectangle<Kernel>& query, ElementCallback act);
+		void findOverlappedRecursive(Node* n, const Rectangle<Kernel>& query, ElementCallback act);
 
 		template <bool extend> Node* find(Element elt);
 	};

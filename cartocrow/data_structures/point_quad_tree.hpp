@@ -57,7 +57,7 @@ template <PointQuadTreeTraits PQT> struct PQTNode {
 } // namespace detail
 
 template <PointQuadTreeTraits PQT>
-void PointQuadTree<PQT>::findContainedRecursive(Node* n, Rectangle<Kernel>& query,
+void PointQuadTree<PQT>::findContainedRecursive(Node* n, const Rectangle<Kernel>& query,
                                                 ElementCallback act) {
 
 	if (n == nullptr) {
@@ -228,7 +228,7 @@ template <PointQuadTreeTraits PQT> bool PointQuadTree<PQT>::remove(Element elt) 
 }
 
 template <PointQuadTreeTraits PQT>
-void PointQuadTree<PQT>::findContained(Rectangle<Kernel>& query, ElementCallback act) {
+void PointQuadTree<PQT>::findContained(const Rectangle<Kernel>& query, ElementCallback act) {
 	findContainedRecursive(root, query, act);
 }
 
