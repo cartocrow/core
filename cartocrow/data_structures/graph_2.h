@@ -1799,10 +1799,10 @@ class Graph_2_path {
 	    : m_start(start), m_end(end), m_cyclic(cyclic), m_index(index), m_data(data) {}
 
   public:
-	Edge_handle start() {
+	Edge_handle first_edge() {
 		return m_start;
 	}
-	Edge_handle end() {
+	Edge_handle last_edge() {
 		return m_end;
 	}
 	size_t graph_index() const {
