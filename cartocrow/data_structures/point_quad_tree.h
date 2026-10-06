@@ -46,7 +46,7 @@ template <PointQuadTreeTraits PQT> class PointQuadTree {
 	void insert(Element elt);
 	bool remove(Element elt);
 
-	void findContained(Rectangle<Kernel>& query, ElementCallback act);
+	void findContained(const Rectangle<Kernel>& query, ElementCallback act);
 	Element findElement(const Point<Kernel>& query, const Number<Kernel> prec = 0);
 
     Rectangle<Kernel> root_box();
@@ -58,7 +58,7 @@ template <PointQuadTreeTraits PQT> class PointQuadTree {
 	int maxdepth;
 
 	Element findElementRecursive(Node* n, const Point<Kernel>& query, const Number<Kernel> prec);
-	void findContainedRecursive(Node* n, Rectangle<Kernel>& query, ElementCallback act);
+	void findContainedRecursive(Node* n, const Rectangle<Kernel>& query, ElementCallback act);
 	template <bool extend> Node* find(Element elt);
 
 	// Does the larger rectangle enclose the smaller?

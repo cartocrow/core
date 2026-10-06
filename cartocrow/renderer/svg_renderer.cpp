@@ -242,6 +242,10 @@ void SvgRenderer::setFillOpacity(int alpha) {
 	m_style.m_fillOpacity = alpha / 255.0;
 }
 
+void SvgRenderer::setPointSize(double size, [[maybe_unused]] bool absoluteSize) {
+	m_style.m_pointSize = size;
+}
+
 std::string SvgRenderer::convertPolygonToCurve(const Polygon<Inexact>& p) const {
 	std::stringstream result;
 	bool first = true;

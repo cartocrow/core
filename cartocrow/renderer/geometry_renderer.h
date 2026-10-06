@@ -204,6 +204,8 @@ class GeometryRenderer {
 	virtual void setFill(Color color) = 0;
 	/// Sets the fill opacity of the renderer (range 0-255).
 	virtual void setFillOpacity(int alpha) = 0;
+	/// Sets the point size (diameter) of rendered points.
+	virtual void setPointSize(double size, bool absoluteSize = false) = 0;
     /// Sets clip path.
     virtual void setClipPath(const RenderPath& clipPath) = 0;
     /// Enable or disable clipping.

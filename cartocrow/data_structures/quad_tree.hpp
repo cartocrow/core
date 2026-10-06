@@ -55,7 +55,8 @@ template <QuadTreeTraits QT> Rectangle<typename QT::Kernel> QuadTree<QT>::root_b
 	return root->rect;
 }
 
-template <QuadTreeTraits QT> bool QuadTree<QT>::encloses(Rectangle<Kernel>& rect, Node* node) {
+template <QuadTreeTraits QT>
+bool QuadTree<QT>::encloses(const Rectangle<Kernel>& rect, Node* node) {
 	// node extends further to the left
 	if (node->inf_left || rect.xmin() > node->rect.xmin()) {
 		return false;
@@ -79,7 +80,8 @@ template <QuadTreeTraits QT> bool QuadTree<QT>::encloses(Rectangle<Kernel>& rect
 	return true;
 }
 
-template <QuadTreeTraits QT> bool QuadTree<QT>::disjoint(Node* node, Rectangle<Kernel>& rect) {
+template <QuadTreeTraits QT>
+bool QuadTree<QT>::disjoint(Node* node, const Rectangle<Kernel>& rect) {
 	// rect left of node
 	if (!node->inf_left && rect.xmax() < node->rect.xmin()) {
 		return true;
@@ -104,7 +106,8 @@ template <QuadTreeTraits QT> bool QuadTree<QT>::disjoint(Node* node, Rectangle<K
 }
 
 template <QuadTreeTraits QT>
-void QuadTree<QT>::findOverlappedRecursive(Node* n, Rectangle<Kernel>& query, ElementCallback act) {
+void QuadTree<QT>::findOverlappedRecursive(Node* n, const Rectangle<Kernel>& query,
+                                           ElementCallback act) {
 
 	if (n == nullptr) {
 		return;
@@ -219,7 +222,7 @@ detail::QTNode<QT>* QuadTree<QT>::find(Element elt) {
 }
 
 template <QuadTreeTraits QT>
-QuadTree<QT>::QuadTree(Rectangle<Kernel>& box, int depth, Number<Kernel> fuzz) {
+QuadTree<QT>::QuadTree(const Rectangle<Kernel>& box, int depth, Number<Kernel> fuzz) {
 	root = new Node(nullptr, box, true, true, true, true);
 	maxdepth = depth;
 	fuzziness = fuzz;
@@ -286,7 +289,7 @@ template <QuadTreeTraits QT> bool QuadTree<QT>::remove(Element elt) {
 }
 
 template <QuadTreeTraits QT>
-void QuadTree<QT>::findOverlapped(Rectangle<Kernel>& query, ElementCallback act) {
+void QuadTree<QT>::findOverlapped(const Rectangle<Kernel>& query, ElementCallback act) {
 	findOverlappedRecursive(root, query, act);
 }
 
