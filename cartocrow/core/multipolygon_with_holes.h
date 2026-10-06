@@ -23,10 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <CGAL/Multipolygon_with_holes_2.h>
 
 namespace cartocrow {
-template <class K>
-struct MultipolygonWithHoles : public CGAL::Multipolygon_with_holes_2<K> {
-	MultipolygonWithHoles<K> transform(const CGAL::Aff_transformation_2<K>& trans) const {
-		MultipolygonWithHoles<K> transformed;
+template <class K, class Container_ = std::vector<typename K::Point_2>>
+struct MultipolygonWithHoles : public CGAL::Multipolygon_with_holes_2<K, Container_> {
+	MultipolygonWithHoles<K, Container_> transform(const CGAL::Aff_transformation_2<K>& trans) const {
+		MultipolygonWithHoles<K, Container_> transformed;
 		for (const auto& pgn : this->polygons_with_holes()) {
 			transformed.add_polygon_with_holes(cartocrow::transform(trans, pgn));
 		}
@@ -37,8 +37,8 @@ struct MultipolygonWithHoles : public CGAL::Multipolygon_with_holes_2<K> {
 		return CGAL::bbox_2(this->polygons_with_holes_begin(), this->polygons_with_holes_end());
 	}
 
-	PolygonSet<K> polygonSet() const {
-		PolygonSet<K> polygonSet;
+	PolygonSet<K, Container_> polygonSet() const {
+		PolygonSet<K, Container_> polygonSet;
 		for (auto pgn : this->polygons_with_holes()) {
 			if (!pgn.outer_boundary().is_simple()) {
 				throw std::runtime_error("Encountered non-simple polygon");
@@ -61,7 +61,7 @@ struct MultipolygonWithHoles : public CGAL::Multipolygon_with_holes_2<K> {
 
 	MultipolygonWithHoles() = default;
 
-	MultipolygonWithHoles(Polygon<K> polygon) {
+	MultipolygonWithHoles(Polygon<K, Container_> polygon) {
 		this->add_polygon(std::move(polygon));
 	}
 
@@ -80,4 +80,14 @@ MultipolygonWithHoles<KernelOut> convert_kernel(const MultipolygonWithHoles<Kern
 	return result;
 }
 
+
+template <typename KernelIn>
+MultipolygonWithHoles<Exact> pretendExact(const MultipolygonWithHoles<KernelIn>& v) {
+	return convert_kernel<Exact>(v);
+}
+
+template <typename KernelIn>
+MultipolygonWithHoles<Inexact> approximate(const MultipolygonWithHoles<KernelIn>& v) {
+	return convert_kernel<Inexact>(v);
+}
 }

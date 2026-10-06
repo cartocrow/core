@@ -65,11 +65,11 @@ template <class K> using Rectangle = CGAL::Iso_rectangle_2<K>;
 template <class K> using Triangle = CGAL::Triangle_2<K>;
 
 /// A polygon in the plane. See \ref CGAL::Polygon_2.
-template <class K> using Polygon = CGAL::Polygon_2<K>;
+template <class K, class Container = std::vector<Point<K>>> using Polygon = CGAL::Polygon_2<K, Container>;
 /// A polygon with holes in the plane. See \ref CGAL::Polygon_2.
-template <class K> using PolygonWithHoles = CGAL::Polygon_with_holes_2<K>;
+template <class K, class Container = std::vector<Point<K>>> using PolygonWithHoles = CGAL::Polygon_with_holes_2<K, Container>;
 /// A point set with polygonal boundaries. See \ref CGAL::Polygon_set_2.
-template <class K> using PolygonSet = CGAL::Polygon_set_2<K>;
+template <class K, class Container = std::vector<Point<K>>, class DCEL = CGAL::Gps_default_dcel<CGAL::Gps_segment_traits_2<K, Container>>> using PolygonSet = CGAL::Polygon_set_2<K, Container, DCEL>;
 
 /// Axis-aligned bounding box with inexact coordinates. See \ref
 /// CGAL::Bbox_2.

@@ -18,16 +18,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "multipolygon_with_holes.h"
 
 namespace cartocrow {
-MultipolygonWithHoles<Inexact> approximate(const MultipolygonWithHoles<Exact>& pgs) {
-	MultipolygonWithHoles<Inexact> approximated;
-	for (const PolygonWithHoles<Exact>& pgn : pgs.polygons_with_holes()) {
+template <class Container_>
+MultipolygonWithHoles<Inexact, Container_> approximate(const MultipolygonWithHoles<Exact, Container_>& pgs) {
+	MultipolygonWithHoles<Inexact, Container_> approximated;
+	for (const PolygonWithHoles<Exact, Container_>& pgn : pgs.polygons_with_holes()) {
 		approximated.add_polygon_with_holes(cartocrow::approximate(pgn));
 	}
 	return approximated;
 }
 
-MultipolygonWithHoles<Exact> pretendExact(const MultipolygonWithHoles<Inexact>& pgs) {
-	MultipolygonWithHoles<Exact> exact;
+template <class Container_>
+MultipolygonWithHoles<Exact, Container_> pretendExact(const MultipolygonWithHoles<Inexact, Container_>& pgs) {
+	MultipolygonWithHoles<Exact, Container_> exact;
 	for (const auto& pgn : pgs.polygons_with_holes()) {
 		exact.add_polygon_with_holes(cartocrow::pretendExact(pgn));
 	}

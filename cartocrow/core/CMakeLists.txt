@@ -36,6 +36,7 @@ set(HEADERS
 	segment_delaunay_graph_helpers.h
 	segment_delaunay_graph_helpers_cgal_adapted.h
 	straight_geometry.h
+	straight_geometry_collection.h
 	transform_helpers.h
 	vector_helpers.h
 )
