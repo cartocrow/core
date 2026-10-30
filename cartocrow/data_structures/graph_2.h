@@ -742,17 +742,16 @@ class Graph_2 {
 
 		transformed.m_initialized = m_initialized;
 
-		Graph_static_vertex_map<Graph_2, Vertex_handle> vmap(this, nullptr);
+		Graph_static_vertex_map<Graph_2, Vertex_handle> vmap(*this, nullptr);
 
 		for (auto vit : vertices()) {
-			Vertex_handle new_v = new Vertex(vit->m_point.transform(trans), vit->m_data);
-			new_v->m_index = vit->m_index;
+			Vertex_handle new_v = new Vertex(vit->m_point.transform(trans), vit->m_index, vit->m_data);
 			transformed.m_vertices[vit->m_index] = new_v;
 
 			vmap[vit] = new_v;
 		}
 
-		Graph_static_edge_map<Graph_2, Edge_handle> emap(this, nullptr);
+		Graph_static_edge_map<Graph_2, Edge_handle> emap(*this, nullptr);
 
 		for (auto eit : edges()) {
 			Vertex_handle new_source = vmap[eit->m_source];
@@ -760,9 +759,11 @@ class Graph_2 {
 
 			Edge_handle new_e = new Edge(
 			    new_source, new_target,
-			    Curve_traits::transform(trans, new_source, new_target, eit->m_representation),
+				eit->m_index,
+			    eit->m_representation,
 			    eit->m_data);
-			new_e->m_index = eit->m_index;
+			Curve_traits::transform(trans, new_source->m_point, new_target->m_point,
+			                        new_e->m_representation);
 			transformed.m_edges[eit->m_index] = new_e;
 
 			emap[eit] = new_e;
@@ -778,10 +779,10 @@ class Graph_2 {
 		if constexpr (GraphTraits::decomposed) {
 			transformed.m_paths.resize(number_of_paths());
 
-			Graph_static_path_map<Graph_2, Path_handle> pmap(this, nullptr);
+			Graph_static_path_map<Graph_2, Path_handle> pmap(*this, nullptr);
 
 			for (auto pit : paths()) {
-				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclc,
+				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclic,
 				                             pit->m_index, pit->m_data);
 				transformed.m_paths[new_p->m_index] = new_p;
 			}
