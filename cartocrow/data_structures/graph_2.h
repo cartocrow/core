@@ -782,7 +782,7 @@ class Graph_2 {
 			Graph_static_path_map<Graph_2, Path_handle> pmap(*this, nullptr);
 
 			for (auto pit : paths()) {
-				Path_handle new_p = new Path(emap[pit->m_source], emap[pit->m_target], pit->m_cyclic,
+				Path_handle new_p = new Path(emap[pit->m_start], emap[pit->m_end], pit->m_cyclic,
 				                             pit->m_index, pit->m_data);
 				transformed.m_paths[new_p->m_index] = new_p;
 			}

@@ -279,7 +279,7 @@ TEST_CASE("Graph copy") {
 
 TEST_CASE("Graph transform") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, Exact, OrientedGraph<false>>;
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, DecomposedGraph<false, std::monostate>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
