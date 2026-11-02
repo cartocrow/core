@@ -785,6 +785,7 @@ class Graph_2 {
 				Path_handle new_p = new Path(emap[pit->m_start], emap[pit->m_end], pit->m_cyclic,
 				                             pit->m_index, pit->m_data);
 				transformed.m_paths[new_p->m_index] = new_p;
+				pmap[pit] = new_p;
 			}
 
 			for (auto eit : edges()) {
