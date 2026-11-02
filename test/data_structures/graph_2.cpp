@@ -7,7 +7,7 @@ using namespace cartocrow;
 
 TEST_CASE("Graph static vertex map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, std::monostate,Exact, PlainGraph<false>>;
+	using G = Straight_graph_2<Exact, PlainGraph<false>>;
 	using V = G::Vertex_handle;
 	using P = Point<Exact>;
 
@@ -41,7 +41,7 @@ TEST_CASE("Graph static vertex map") {
 
 TEST_CASE("Graph vertex map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate,std::monostate, Exact, PlainGraph<false>>;
+	using G = Straight_graph_2<Exact, PlainGraph<false>>;
 	using V = G::Vertex_handle;
 	using P = Point<Exact>;
 
@@ -72,7 +72,7 @@ TEST_CASE("Graph vertex map") {
 
 TEST_CASE("Graph static edge map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate,std::monostate, Exact, PlainGraph<false>>;
+	using G = Straight_graph_2<Exact, PlainGraph<false>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
@@ -104,7 +104,7 @@ TEST_CASE("Graph static edge map") {
 
 TEST_CASE("Graph edge map") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate,std::monostate, Exact, PlainGraph<false>>;
+	using G = Straight_graph_2<Exact, PlainGraph<false>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
@@ -140,7 +140,7 @@ TEST_CASE("Graph edge map") {
 
 TEST_CASE("Graph history") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, std::monostate, Exact, PlainGraph<true>>;
+	using G = Straight_graph_2<Exact, PlainGraph<true>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
@@ -196,7 +196,7 @@ TEST_CASE("Graph history") {
 
 TEST_CASE("Graph operations") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, std::monostate, Exact, DecomposedGraph<true>>;
+	using G = Straight_graph_2<Exact, DecomposedGraph<true>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using Path = G::Path_handle;
@@ -243,10 +243,10 @@ TEST_CASE("Graph operations") {
 
 TEST_CASE("Graph copy") {
 
-	using G1 = Straight_graph_2<std::monostate, std::monostate, std::monostate, Exact, OrientedGraph<false>>;
+	using G1 = Straight_graph_2<Exact, OrientedGraph<false>>;
 	using V1 = G1::Vertex_handle;
 	using E1 = G1::Edge_handle;
-	using G2 = Straight_graph_2<std::monostate, std::monostate, std::monostate, Exact, DecomposedGraph<true>>;
+	using G2 = Straight_graph_2<Exact, DecomposedGraph<true>>;
 	using P = Point<Exact>;
 
 	G1 g;
@@ -270,7 +270,7 @@ TEST_CASE("Graph copy") {
 	CHECK(g2.number_of_vertices() == 3);
 	CHECK(g2.number_of_edges() == 2);
 
-	using G3 = Straight_graph_2<std::monostate, std::monostate, std::monostate, Inexact, DecomposedGraph<true>>;
+	using G3 = Straight_graph_2<Inexact, DecomposedGraph<true>>;
 
 	G3 g3;
 	graph_2_copy(g, g3);
@@ -279,7 +279,7 @@ TEST_CASE("Graph copy") {
 
 TEST_CASE("Graph transform") {
 
-	using G = Straight_graph_2<std::monostate, std::monostate, std::monostate, Exact, DecomposedGraph<false>>;
+	using G = Straight_graph_2<Exact, DecomposedGraph<false>>;
 	using V = G::Vertex_handle;
 	using E = G::Edge_handle;
 	using P = Point<Exact>;
