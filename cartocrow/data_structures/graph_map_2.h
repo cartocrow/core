@@ -25,7 +25,7 @@ namespace cartocrow {
 
 class Graph_vertex_index_listener {
 
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <class VertexData, class EdgeData, class PathData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
 	friend class Graph_2;
 
   protected:
@@ -42,7 +42,8 @@ class Graph_vertex_index_listener {
 
 class Graph_edge_index_listener {
 
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <class VertexData, class EdgeData, class PathData, GraphCurveTraits_2 CurveTraits,
+	          GraphTraits_2 GraphTraits>
 	friend class Graph_2;
 
   protected:
@@ -59,7 +60,8 @@ class Graph_edge_index_listener {
 
 class Graph_path_index_listener {
 
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <class VertexData, class EdgeData, class PathData, GraphCurveTraits_2 CurveTraits,
+	          GraphTraits_2 GraphTraits>
 	friend class Graph_2;
 
   protected:

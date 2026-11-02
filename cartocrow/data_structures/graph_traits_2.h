@@ -35,25 +35,19 @@ template <class T> concept GraphTraits_2 = requires {
 	requires std::is_same_v<bool const, decltype(T::decomposed)>;
 };
 
-template <class T> concept HasPathData = requires {
-	typename T::path_data;
-};
-
-template<bool H, bool O, bool S, bool D, typename PD> struct CustomGraphTraits {
+template<bool H, bool O, bool S, bool D> struct CustomGraphTraits {
 	static constexpr bool historic = H;
 	static constexpr bool oriented = O;
 	static constexpr bool sorted = S;
 	static constexpr bool decomposed = D;
-	using PathData = PD;
 };
-static_assert(GraphTraits_2<CustomGraphTraits<true, true, true, true, std::monostate>>);
+static_assert(GraphTraits_2<CustomGraphTraits<true, true, true, true>>);
 
 template <bool H> struct PlainGraph {
 	static constexpr bool historic = H;
 	static constexpr bool oriented = false;
 	static constexpr bool sorted = false;
 	static constexpr bool decomposed = false;
-	using PathData = std::monostate;
 };
 static_assert(GraphTraits_2<PlainGraph<true>>);
 
@@ -63,17 +57,15 @@ struct OrientedGraph {
 	static constexpr bool oriented = true;
 	static constexpr bool sorted = false;
 	static constexpr bool decomposed = false;
-	using PathData = std::monostate;
 };
 static_assert(GraphTraits_2<OrientedGraph<true>>);
 
-template <bool H, typename PD> struct DecomposedGraph {
+template <bool H> struct DecomposedGraph {
 	static constexpr bool historic = H;
 	static constexpr bool oriented = true;
 	static constexpr bool sorted = false;
 	static constexpr bool decomposed = true;
-	using PathData= PD;
 };
-static_assert(GraphTraits_2<DecomposedGraph<true,std::monostate>>);
+static_assert(GraphTraits_2<DecomposedGraph<true>>);
 
 } // namespace cartocrow
