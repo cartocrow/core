@@ -276,3 +276,36 @@ TEST_CASE("Graph copy") {
 	graph_2_copy(g, g3);
 	graph_2_copy(g2, g3);
 }
+
+TEST_CASE("Graph transform") {
+
+	using G = Straight_graph_2<std::monostate, std::monostate, Exact, DecomposedGraph<false, std::monostate>>;
+	using V = G::Vertex_handle;
+	using E = G::Edge_handle;
+	using P = Point<Exact>;
+	using Vec = Vector<Exact>;
+
+	CGAL::Aff_transformation_2<Exact> trans(CGAL::TRANSLATION, Vec(1, 0));
+
+	G g;
+	V u = g.add_vertex(P(0, 0));
+	V v = g.add_vertex(P(1, 1));
+	V w = g.add_vertex(P(2, 0));
+
+	E e = g.add_edge(u, v);
+	E f = g.add_edge(v, w);
+
+	g.initialize();
+
+	CHECK(g.is_initialized());
+	CHECK(g.number_of_vertices() == 3);
+	CHECK(g.number_of_edges() == 2);
+
+	G g2 = g.transform(trans);
+
+	CHECK(g2.is_initialized());
+	CHECK(g2.number_of_vertices() == 3);
+	CHECK(g2.number_of_edges() == 2);
+
+	CHECK(g2.vertex(0)->point() == P(1, 0));
+}
