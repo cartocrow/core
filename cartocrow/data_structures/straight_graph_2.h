@@ -22,7 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace cartocrow {
 
-template <class VD, class ED, class K, class M>
-using Straight_graph_2 = Graph_2<VD, ED, Graph_segment_curve_traits_2<K>, M>;
+	
+template <class Kernel, GraphTraits_2 GraphTraits, class VertexData = std::monostate,
+          class EdgeData = std::monostate, class PathData = std::monostate>
+using Straight_graph_2 = Graph_2<Graph_segment_curve_traits_2<Kernel>, GraphTraits, VertexData, EdgeData, PathData>;
 
 }

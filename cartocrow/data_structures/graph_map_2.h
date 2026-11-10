@@ -24,8 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace cartocrow {
 
 class Graph_vertex_index_listener {
-
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData, class EdgeData, class PathData>
 	friend class Graph_2;
 
   protected:
@@ -42,7 +41,7 @@ class Graph_vertex_index_listener {
 
 class Graph_edge_index_listener {
 
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData, class EdgeData, class PathData>
 	friend class Graph_2;
 
   protected:
@@ -59,7 +58,7 @@ class Graph_edge_index_listener {
 
 class Graph_path_index_listener {
 
-	template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+	template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData, class EdgeData, class PathData>
 	friend class Graph_2;
 
   protected:

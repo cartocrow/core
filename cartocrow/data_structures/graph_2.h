@@ -26,17 +26,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace cartocrow {
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData = std::monostate,
+          class EdgeData = std::monostate, class PathData = std::monostate>
 class Graph_2_vertex;
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData = std::monostate,
+          class EdgeData = std::monostate, class PathData = std::monostate>
 class Graph_2_edge;
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData = std::monostate,
+          class EdgeData = std::monostate, class PathData = std::monostate>
 class Graph_2_path;
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData = std::monostate,
+          class EdgeData = std::monostate, class PathData = std::monostate>
 class Graph_2 {
-	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_edge<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	template <typename G, typename T> friend class Graph_vertex_map;
 	template <typename G, typename T> friend class Graph_edge_map;
 	template <typename G, typename T> friend class Graph_path_map;
@@ -63,11 +67,11 @@ class Graph_2 {
 	template <class G> friend class detail::SubdivideEdge;
 
   public:
-	using Vertex = Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Vertex = Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	using Vertex_handle = Vertex*;
 	using Vertex_const_handle = const Vertex*;
 
-	using Edge = Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Edge = Graph_2_edge<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	using Edge_handle = Edge*;
 	using Edge_const_handle = const Edge*;
 
@@ -337,12 +341,12 @@ class Graph_2 {
 	// ---- ONLY WHEN GraphTraits::decomposed -------------------------------- //
   public:
 	using Path = std::conditional<GraphTraits::decomposed,
-	                              Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>,
+	                              Graph_2_path<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>,
 	                              std::monostate>::type;
 	using Path_handle = Path*;
 	using Path_const_handle = const Path*;
 
-	using Path_data = GraphTraits::PathData;
+	using Path_data = PathData;
 
   private:
 	using Path_container = std::vector<Path_handle>;
@@ -468,7 +472,7 @@ class Graph_2 {
 	using Path_const_iterator = Path_container::const_iterator;
 
 	class Path_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		Path_container& m_container;
@@ -486,7 +490,7 @@ class Graph_2 {
 	};
 
 	class Path_const_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		const Path_container& m_container;
@@ -570,7 +574,7 @@ class Graph_2 {
 
   public:
 	class Vertex_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		Vertex_container& m_container;
@@ -588,7 +592,7 @@ class Graph_2 {
 	};
 
 	class Vertex_const_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		const Vertex_container& m_container;
@@ -606,7 +610,7 @@ class Graph_2 {
 	};
 
 	class Edge_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		Edge_container& m_container;
@@ -624,7 +628,7 @@ class Graph_2 {
 	};
 
 	class Edge_const_range {
-		friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		const Edge_container& m_container;
@@ -1321,10 +1325,11 @@ class Graph_2 {
 	}
 };
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData,
+          class EdgeData, class PathData>
 class Graph_2_vertex {
-	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_edge<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	template <class InGraph, class OutGraph>
 	friend void
@@ -1348,7 +1353,7 @@ class Graph_2_vertex {
 	template <class G> friend class detail::SubdivideEdge;
 
   public:
-	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Graph = Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
@@ -1361,6 +1366,7 @@ class Graph_2_vertex {
 
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
+	using Path_data = PathData;
 
 	using Curve_traits = CurveTraits;
 	using Kernel = CurveTraits::Kernel;
@@ -1503,7 +1509,7 @@ class Graph_2_vertex {
 	}
 
 	class Incident_edges_range {
-		friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		Edge_container& m_container;
@@ -1521,7 +1527,7 @@ class Graph_2_vertex {
 	};
 
 	class Incident_edges_const_range {
-		friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
+		friend class Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	  private:
 		const Edge_container& m_container;
@@ -1547,17 +1553,18 @@ class Graph_2_vertex {
 
 	friend std::ostream&
 	operator<<(std::ostream& os,
-	           const Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+	    const Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>& c) {
 		return os << "V[" << c.m_index << " @ " << c.m_point << " ; d= " << c.m_incident.size()
 		          << "]";
 	}
 };
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData,
+          class EdgeData, class PathData>
 class Graph_2_edge {
-	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_path<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	template <class InGraph, class OutGraph>
 	friend void
@@ -1581,7 +1588,7 @@ class Graph_2_edge {
 	template <class G> friend class detail::SubdivideEdge;
 
   public:
-	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Graph = Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
@@ -1594,6 +1601,7 @@ class Graph_2_edge {
 
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
+	using Path_data = PathData;
 
 	using Curve_traits = CurveTraits;
 	using Kernel = CurveTraits::Kernel;
@@ -1731,16 +1739,17 @@ class Graph_2_edge {
 
 	friend std::ostream&
 	operator<<(std::ostream& os,
-	           const Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+	           const Graph_2_edge<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>& c) {
 		return os << "E[" << c.m_index << " : " << *(c.m_source) << " -> " << *(c.m_target) << "]";
 	}
 };
 
-template <class VertexData, class EdgeData, GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits>
+template <GraphCurveTraits_2 CurveTraits, GraphTraits_2 GraphTraits, class VertexData,
+          class EdgeData, class PathData>
 class Graph_2_path {
-	friend class Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_vertex<VertexData, EdgeData, CurveTraits, GraphTraits>;
-	friend class Graph_2_edge<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	friend class Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_vertex<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
+	friend class Graph_2_edge<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 
 	template <class InGraph, class OutGraph>
 	friend void
@@ -1764,7 +1773,7 @@ class Graph_2_path {
 	template <class G> friend class detail::SubdivideEdge;
 
   public:
-	using Graph = Graph_2<VertexData, EdgeData, CurveTraits, GraphTraits>;
+	using Graph = Graph_2<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>;
 	using Vertex = Graph::Vertex;
 	using Vertex_handle = Graph::Vertex_handle;
 	using Vertex_const_handle = Graph::Vertex_const_handle;
@@ -1777,7 +1786,7 @@ class Graph_2_path {
 
 	using Vertex_data = VertexData;
 	using Edge_data = EdgeData;
-	using Path_data = GraphTraits::PathData;
+	using Path_data = PathData;
 
 	using Curve_traits = CurveTraits;
 	using Kernel = CurveTraits::Kernel;
@@ -1822,7 +1831,7 @@ class Graph_2_path {
 
 	friend std::ostream&
 	operator<<(std::ostream& os,
-	           const Graph_2_path<VertexData, EdgeData, CurveTraits, GraphTraits>& c) {
+	           const Graph_2_path<CurveTraits, GraphTraits, VertexData, EdgeData, PathData>& c) {
 		return os << "P[" << c.m_index << " : " << (c.m_cyclic ? "cyclic, " : "acyclic, ")
 		          << *(c.m_start) << " -> " << *(c.m_end) << "]";
 	}
