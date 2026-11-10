@@ -17,7 +17,7 @@ set(HEADERS
 	straight_graph_2.h
 )
 
-add_library(data_structures ${SOURCES})
+add_library(data_structures INTERFACE)
 
 cartocrow_install_module(data_structures)
 install(FILES ${HEADERS} DESTINATION ${CARTOCROW_INSTALL_DIR}/data_structures)
